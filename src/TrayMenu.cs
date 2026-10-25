@@ -49,15 +49,41 @@ internal sealed class TrayMenu
             menu.Items.Add(item);
         }
 
-        // Наше приложение не на переднем плане — без этого меню не получит фокус и не закроется кликом мимо.
-        menu.Opened += (_, _) =>
+        // Во время клика по значку фокус у панели задач, и меню без фокуса сразу закрывается.
+        // Поэтому сначала выводим на передний план своё невидимое окно 1×1 под курсором и открываем меню от него.
+        var host = Host();
+        var pos = System.Windows.Forms.Cursor.Position;
+        double scale = VisualTreeHelper.GetDpi(host).DpiScaleX;
+        host.Left = pos.X / scale;
+        host.Top = pos.Y / scale;
+        host.Show();
+        host.Activate();
+        if (PresentationSource.FromVisual(host) is HwndSource source)
+            Native.SetForegroundWindow(source.Handle);
+
+        menu.PlacementTarget = host;
+        menu.Closed += (_, _) =>
         {
-            if (PresentationSource.FromVisual(menu) is HwndSource source)
-                Native.SetForegroundWindow(source.Handle);
-            menu.Focus();
+            _open = null;
+            host.Hide();
         };
-        menu.Closed += (_, _) => _open = null;
         _open = menu;
-        menu.IsOpen = true;
+        // Открываем, когда Windows закончит обрабатывать сам клик по значку.
+        host.Dispatcher.BeginInvoke(() => menu.IsOpen = true, System.Windows.Threading.DispatcherPriority.Input);
     }
+
+    private Window? _host;
+
+    private Window Host() => _host ??= new Window
+    {
+        Width = 1,
+        Height = 1,
+        WindowStyle = WindowStyle.None,
+        AllowsTransparency = true,
+        Background = Brushes.Transparent,
+        ShowInTaskbar = false,
+        Topmost = true,
+        ResizeMode = ResizeMode.NoResize,
+        WindowStartupLocation = WindowStartupLocation.Manual,
+    };
 }
