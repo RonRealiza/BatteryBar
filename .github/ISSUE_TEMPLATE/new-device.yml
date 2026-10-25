@@ -1,0 +1,41 @@
+name: Новое устройство
+description: BatteryBar не показывает заряд моего устройства
+title: "[Устройство] "
+labels: ["device-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо! Удобнее всего отправить заявку из самой программы: **Настройки → «Устройство не определилось?»** — отчёт заполнится автоматически.
+  - type: input
+    id: model
+    attributes:
+      label: Модель устройства
+      placeholder: например, Razer Viper V2 Pro
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Как подключено
+      options:
+        - Через USB-ресивер (2.4 ГГц)
+        - Bluetooth
+        - Провод
+        - Не знаю
+  - type: dropdown
+    id: vendor-app
+    attributes:
+      label: Показывает ли заряд фирменная программа производителя?
+      options:
+        - Да
+        - Нет
+        - Программы нет / не знаю
+  - type: textarea
+    id: report
+    attributes:
+      label: Отчёт BatteryBar
+      description: Заполняется программой автоматически. Если создаёте заявку вручную — вставьте отчёт из «Скопировать отчёт».
+      render: text
+    validations:
+      required: true

@@ -145,6 +145,14 @@ internal partial class SettingsWindow : Window
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => _host.RefreshNow();
 
+    private void ReportDevice_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new ReportWindow(() => _host.Devices) { Owner = this };
+        // Ввод текста в WPF-окне внутри цикла сообщений WinForms.
+        System.Windows.Forms.Integration.ElementHost.EnableModelessKeyboardInterop(window);
+        window.Show();
+    }
+
     private void OpenLog_Click(object sender, RoutedEventArgs e) => _host.OpenLog();
 
     private static bool AppsUseLightTheme()

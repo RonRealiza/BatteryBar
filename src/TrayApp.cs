@@ -177,6 +177,15 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     /// <summary>Открыть окно настроек, как только запустится цикл сообщений.</summary>
     public void ShowSettingsOnStart() => _ui.Post(_ => OpenSettings(), null);
 
+    /// <summary>Открыть окно «Устройство не определилось?» сразу после запуска (для проверки).</summary>
+    public void ShowReportOnStart() => _ui.Post(_ =>
+    {
+        var window = new ReportWindow(() => _devices);
+        System.Windows.Forms.Integration.ElementHost.EnableModelessKeyboardInterop(window);
+        window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+        window.Show();
+    }, null);
+
     /// <summary>Открыть меню трея у курсора сразу после запуска (для проверки внешнего вида).</summary>
     public void ShowMenuOnStart() => _ui.Post(_ => _menu.Show(), null);
 

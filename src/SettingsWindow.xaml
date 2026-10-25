@@ -82,6 +82,9 @@
                 <TextBlock Style="{StaticResource Secondary}" FontSize="13"
                            Text="Подключённых устройств не найдено. Включите мышь, клавиатуру, гарнитуру или геймпад — они появятся здесь в течение нескольких секунд." />
             </Border>
+            <TextBlock Margin="2,8,0,0" FontSize="13">
+                <Hyperlink Click="ReportDevice_Click">Устройство не определилось?</Hyperlink>
+            </TextBlock>
 
             <!-- Отображение -->
             <TextBlock Text="Отображение" Style="{StaticResource SectionHeader}" />
