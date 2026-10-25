@@ -21,6 +21,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     private readonly Settings _settings = Settings.Load();
     private readonly NotifyIcon _tray;
     private readonly DeviceTrayIcons _deviceTray;
+    private readonly TrayMenu _menu;
     private SettingsWindow? _settingsWindow;
     private readonly BatteryMonitor _monitor;
     private readonly System.Windows.Forms.Timer _topmostTimer;
@@ -36,15 +37,19 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         using (var probe = new Control()) _ = probe.Handle;
         _ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
 
-        // Окно настроек — WPF. Объект Application нужен для ресурсов темы; цикл сообщений остаётся у WinForms.
-        if (System.Windows.Application.Current == null)
-            _ = new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+        // Окно настроек и меню трея — WPF с темой Fluent (стиль Windows 11, светлая/тёмная по системе).
+        // Объект Application нужен для ресурсов темы; цикл сообщений остаётся у WinForms.
+        var wpf = System.Windows.Application.Current
+                  ?? new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+#pragma warning disable WPF0001 // ThemeMode в .NET 9 помечен как экспериментальный
+        wpf.ThemeMode = System.Windows.ThemeMode.System;
+#pragma warning restore WPF0001
 
-        TrayMenu.EnableDarkMenus();
-        var menu = new TrayMenu();
-        menu.Add("Настройки", OpenSettings, isDefault: true);
+        var menu = _menu = new TrayMenu();
+        menu.Add("Настройки", "", OpenSettings);
+        menu.Add("Обновить заряд", "", () => _monitor!.RefreshNow());
         menu.AddSeparator();
-        menu.Add("Выход", ExitThread);
+        menu.Add("Выход", "", ExitThread);
 
         _tray = new NotifyIcon
         {
@@ -56,7 +61,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         _tray.MouseClick += (_, e) =>
         {
             if (e.Button == MouseButtons.Left) OpenSettings();
-            else if (e.Button == MouseButtons.Right) menu.Show(_deviceTray.Handle);
+            else if (e.Button == MouseButtons.Right) menu.Show();
         };
 
         _monitor = new BatteryMonitor(new IBatteryProvider[]
@@ -171,6 +176,9 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 
     /// <summary>Открыть окно настроек, как только запустится цикл сообщений.</summary>
     public void ShowSettingsOnStart() => _ui.Post(_ => OpenSettings(), null);
+
+    /// <summary>Открыть меню трея у курсора сразу после запуска (для проверки внешнего вида).</summary>
+    public void ShowMenuOnStart() => _ui.Post(_ => _menu.Show(), null);
 
     private void OpenSettings()
     {

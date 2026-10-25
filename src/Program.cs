@@ -29,6 +29,8 @@ internal static class Program
         var app = new TrayApp();
         if (args.Contains("--settings"))
             app.ShowSettingsOnStart();
+        if (args.Contains("--menu"))
+            app.ShowMenuOnStart();
         Application.Run(app);
     }
 }

@@ -1,75 +1,63 @@
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace BatteryBar;
 
 /// <summary>
-/// Контекстное меню иконок в трее — системное меню Windows (как у Bluetooth и других значков трея):
-/// Windows 11 сама рисует его со скруглёнными углами и в цветах текущей темы.
+/// Контекстное меню иконок в трее в стиле меню Windows 11 (как у значка сети): скруглённые углы,
+/// значки Segoe Fluent Icons у пунктов, подсветка при наведении, цвета текущей темы.
+/// Это WPF ContextMenu с темой Fluent из .NET 9 (тема включается для всего приложения в TrayApp).
 /// </summary>
 internal sealed class TrayMenu
 {
-    private const int AllowDark = 1;
-    private const uint WM_NULL = 0x0000;
+    private static readonly FontFamily IconFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
-    private readonly List<(string? Text, Action? Action, bool IsDefault)> _items = new();
+    private readonly List<(string? Text, string? Glyph, Action? Action)> _items = new();
+    private ContextMenu? _open;
 
-    /// <summary>Разрешить системным меню процесса тёмную тему. Вызвать один раз при старте.</summary>
-    public static void EnableDarkMenus()
+    /// <param name="glyph">Значок из Segoe Fluent Icons, например "" — шестерёнка.</param>
+    public void Add(string text, string glyph, Action action) => _items.Add((text, glyph, action));
+
+    public void AddSeparator() => _items.Add((null, null, null));
+
+    /// <summary>Показать меню у курсора.</summary>
+    public void Show()
     {
-        try
+        _open?.SetCurrentValue(ContextMenu.IsOpenProperty, false);
+
+        // Размеры подогнаны под системные меню Windows 11 (например, у значка сети).
+        var menu = new ContextMenu { Placement = PlacementMode.MousePoint, MinWidth = 220 };
+        foreach (var (text, glyph, action) in _items)
         {
-            Native.SetPreferredAppMode(AllowDark);
-            Native.FlushMenuThemes();
-        }
-        catch (Exception ex)
-        {
-            // Старые сборки Windows: меню просто останется светлым.
-            Log.Error("dark menus", ex);
-        }
-    }
-
-    /// <param name="isDefault">Пункт по умолчанию — выделяется жирным, как «Show Bluetooth Devices».</param>
-    public void Add(string text, Action action, bool isDefault = false) => _items.Add((text, action, isDefault));
-
-    public void AddSeparator() => _items.Add((null, null, false));
-
-    /// <summary>Показать меню у курсора. owner — любое окно нашего процесса (нужно меню для фокуса).</summary>
-    public void Show(IntPtr owner)
-    {
-        // Тему могли переключить, пока программа работала.
-        try { Native.FlushMenuThemes(); } catch { }
-
-        IntPtr menu = Native.CreatePopupMenu();
-        try
-        {
-            for (int i = 0; i < _items.Count; i++)
+            if (text == null)
             {
-                var (text, _, isDefault) = _items[i];
-                if (text == null)
-                {
-                    Native.AppendMenu(menu, Native.MF_SEPARATOR, UIntPtr.Zero, null);
-                    continue;
-                }
-                uint id = (uint)(i + 1);
-                Native.AppendMenu(menu, Native.MF_STRING, (UIntPtr)id, text);
-                if (isDefault) Native.SetMenuDefaultItem(menu, id, 0);
+                menu.Items.Add(new Separator());
+                continue;
             }
-
-            // Без этого меню не закрывается кликом мимо (известная особенность меню значков трея).
-            Native.SetForegroundWindow(owner);
-            var pos = Cursor.Position;
-            int chosen = Native.TrackPopupMenuEx(menu,
-                Native.TPM_RETURNCMD | Native.TPM_NONOTIFY | Native.TPM_RIGHTBUTTON, pos.X, pos.Y, owner, IntPtr.Zero);
-            Native.PostMessage(owner, WM_NULL, IntPtr.Zero, IntPtr.Zero);
-
-            if (chosen > 0 && chosen <= _items.Count)
-                _items[chosen - 1].Action?.Invoke();
+            var item = new MenuItem
+            {
+                Header = text,
+                Icon = new TextBlock { Text = glyph, FontFamily = IconFont, FontSize = 16, Margin = new Thickness(0, 0, 4, 0) },
+                Padding = new Thickness(4, 2, 16, 2),
+            };
+            item.Click += (_, _) => action!();
+            menu.Items.Add(item);
         }
-        finally
+
+        // Наше приложение не на переднем плане — без этого меню не получит фокус и не закроется кликом мимо.
+        menu.Opened += (_, _) =>
         {
-            Native.DestroyMenu(menu);
-        }
+            if (PresentationSource.FromVisual(menu) is HwndSource source)
+                Native.SetForegroundWindow(source.Handle);
+            menu.Focus();
+        };
+        menu.Closed += (_, _) => _open = null;
+        _open = menu;
+        menu.IsOpen = true;
     }
 }

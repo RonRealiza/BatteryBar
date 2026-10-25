@@ -160,7 +160,7 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
         }
         else if (m.Msg == CallbackMessage && (int)m.LParam == WM_RBUTTONUP)
         {
-            _menu.Show(Handle);
+            _menu.Show();
         }
         else if (m.Msg == CallbackMessage && (int)m.LParam == WM_LBUTTONUP)
         {
