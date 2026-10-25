@@ -29,6 +29,14 @@
 - **English and Russian.** Picks your system language by default.
 - **Starts with Windows**, if you want it to.
 
+## Tray icons
+
+Instead of the taskbar block (or together with it), every device can get its own tray icon: the device glyph and a battery bar. The bar is green while charging and red when low; the exact percentage is in the tooltip.
+
+<p align="center">
+  <img src="docs/screenshots/tray.png" width="408" alt="Tray icons: headset, gamepad, keyboard and mouse with battery bars">
+</p>
+
 ## Settings window
 
 <p align="center">
