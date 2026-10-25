@@ -1,61 +1,88 @@
-# BatteryBar
+<p align="center">
+  <img src="assets/icon-preview.png" width="96" alt="BatteryBar icon">
+</p>
 
-Показывает заряд беспроводных устройств на панели задач Windows 11 (снизу или сбоку, на одном или нескольких мониторах) и/или отдельными иконками в трее. Интерфейс на русском и английском (по умолчанию — как в системе).
+<h1 align="center">BatteryBar</h1>
 
-*Shows battery levels of wireless devices on the Windows 11 taskbar and/or in the tray. The UI is available in English and Russian.*
+<p align="center">
+  Battery levels of your wireless mouse, keyboard, headset and gamepads — right on the Windows 11 taskbar.
+</p>
 
-## Поддерживаемые устройства
+<p align="center">
+  <b>English</b> · <a href="README.ru.md">Русский</a>
+</p>
 
-| Устройства | Как читается | Проверено на железе |
-|---|---|---|
-| Мыши и клавиатуры Logitech через Lightspeed / Unifying / Bolt и по проводу | HID++ 2.0, фичи 0x1004 / 0x1000 / 0x1001 / 0x1F20 | Pro X Superlight 2 |
-| Гарнитуры Logitech G с HID++ (G535, G733, Pro X…) | HID++ 0x1F20 (напряжение) | нет |
-| Геймпады Xbox (адаптер, Bluetooth, USB) | Windows.Gaming.Input | да |
-| DualSense / DualSense Edge (USB, Bluetooth) | байт статуса во входном отчёте | да |
-| DualShock 4 (обе ревизии и USB-адаптер) | байт статуса во входном отчёте | нет |
-| Bluetooth-устройства, чей заряд показывает сама Windows | свойство DEVPKEY_Bluetooth_Battery | нет |
-| HyperX Cloud III Wireless | отчёт 0x66, протокол из HyperHeadset | да |
-| SteelSeries Arctis Nova 7 / 7P / 7X, Nova 5, Nova Pro Wireless, Arctis 7 / 7+ / 1 / 9 / Pro | протоколы из HeadsetControl | нет |
-| HyperX Cloud Alpha Wireless, Cloud II Wireless, Cloud Flight | протоколы из HeadsetControl | нет |
-| Corsair Void и родственные | протокол из HeadsetControl | нет |
-| Клавиатура Zornher ZH870 (2.4 ГГц) | команда 0x20 через интерфейс MI_03 | да |
-| AirPods и Beats | Bluetooth-реклама Apple (Proximity Pairing), только пока они подключены | AirPods Pro 2 |
-| Беспроводные мыши, клавиатуры и гарнитуры Razer | feature-отчёт 90 байт, команды 0x07/0x80 и 0x07/0x84 (по OpenRazer) | нет |
+<p align="center">
+  <img src="docs/screenshots/taskbar.png" alt="BatteryBar on the taskbar: mouse 71%, headset 90%, keyboard 93%, DualSense 100%">
+</p>
 
-Протоколы взяты из описаний открытых проектов [HeadsetControl](https://github.com/Sapd/HeadsetControl), [HyperHeadset](https://github.com/LennardKittner/HyperHeadset), [OpenRazer](https://github.com/openrazer/openrazer) и [OpenPods](https://github.com/adolfintel/OpenPods); код написан заново.
+## Features
 
-**Правило безопасности:** команды отправляются только устройствам, точно опознанным по VID/PID (и, где нужно, по названию и интерфейсу). Остальные устройства BatteryBar не трогает.
+- **On the taskbar, next to the weather.** A compact block with an icon and percentage for every device. Works with the taskbar at the bottom or on the side, on one or all monitors.
+- **Or in the tray.** Each device can get its own tray icon with the charge level — or use both at once.
+- **Charging and low battery at a glance.** A green bolt while charging; the percentage turns red at 20% and below.
+- **Devices come and go automatically.** A device appears when it is turned on and disappears when it is turned off. A sleeping mouse keeps its last known level instead of blinking.
+- **Several gamepads.** Gamepads are labelled PS / PS4 / XB, with a number if you have two of the same kind.
+- **Windows 11 look.** Settings window and tray menu in the native Fluent style, light or dark — follows your Windows theme.
+- **English and Russian.** Picks your system language by default.
+- **Starts with Windows**, if you want it to.
 
-Не поддерживаются модели с закрытыми и неописанными протоколами — их можно добавить по инструкции ниже.
+## Screenshots
 
-## Сборка и запуск
+| Tray icons | Tray menu |
+|---|---|
+| <img src="docs/screenshots/tray.png" width="320" alt="Tray icons with battery percentages"> | <img src="docs/screenshots/menu-en.png" alt="Tray menu: Settings, Refresh battery, Exit"> |
 
-Нужен [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0).
+<p align="center">
+  <img src="docs/screenshots/settings-en.png" width="460" alt="Settings window">
+</p>
 
-```bash
-dotnet run
-```
+## Supported devices
 
-Установленная копия живёт в `%LOCALAPPDATA%\Programs\BatteryBar`, на неё же указывает автозапуск. Пересобрать и обновить её (приложение перезапустится само):
+| Devices | Status |
+|---|---|
+| Logitech mice and keyboards (Lightspeed, Unifying, Bolt receivers and cable) | ✅ tested with PRO X Superlight 2 |
+| HyperX Cloud III Wireless | ✅ tested |
+| Xbox controllers (adapter, Bluetooth, USB) | ✅ tested |
+| DualSense / DualSense Edge (USB, Bluetooth) | ✅ tested |
+| AirPods and Beats | ✅ tested with AirPods Pro 2 |
+| Zornher ZH870 keyboard | ✅ tested |
+| DualShock 4 | 🧪 should work |
+| Razer wireless mice, keyboards and headsets | 🧪 should work |
+| SteelSeries Arctis Nova 7 / 7P / 7X, Nova 5, Nova Pro Wireless, Arctis 7 / 7+ / 1 / 9 / Pro | 🧪 should work |
+| HyperX Cloud Alpha Wireless, Cloud II Wireless, Cloud Flight | 🧪 should work |
+| Corsair Void and related headsets | 🧪 should work |
+| Logitech G headsets (G535, G733, PRO X and others) | 🧪 should work |
+| Any Bluetooth device whose battery Windows shows in Settings | 🧪 should work |
 
-```bash
-powershell -ExecutionPolicy Bypass -File tools\publish.ps1
-```
+🧪 — implemented from public protocol descriptions but not yet confirmed on real hardware. If it works (or doesn't) for you, please let us know.
 
-Клик по иконке BatteryBar в трее открывает окно настроек: режим отображения, мониторы, автозапуск, журнал.
-Журнал: `%LOCALAPPDATA%\BatteryBar\log.txt`.
-Список всех HID-устройств (для добавления новых моделей): `BatteryBar.exe --list-hid` → `%LOCALAPPDATA%\BatteryBar\hid-devices.txt`.
+### Your device isn't detected?
 
-## Как устроено
+Open **Settings → Device not detected?**, pick the device and press **Send to GitHub**. A pre-filled issue opens in your browser — you see the whole report before sending. It contains only technical device IDs: no serial numbers and no personal names.
 
-- `src/TaskbarLocator.cs` — через UI Automation находит кнопки `WidgetsButton` и `StartButton` на каждой панели задач и вычисляет свободное место между ними (вдоль горизонтальной или вертикальной панели).
-- `src/OverlayWindow.cs` — прозрачное дочернее окно панели задач (`UpdateLayeredWindow`), не перехватывает мышь и фокус.
-- `src/DeviceTrayIcons.cs` — иконки устройств в трее с постоянными uID.
-- `src/SettingsWindow.xaml` — окно настроек на WPF с темой Fluent.
-- `src/Providers/*` — по модулю на семейство устройств; `BatteryMonitor` опрашивает их (обычно раз в 5 секунд) и убирает дубли.
+<p align="center">
+  <img src="docs/screenshots/report-en.png" width="460" alt="Device not detected window">
+</p>
 
-## Как добавить новую модель
+## Installation
 
-1. Запустите `BatteryBar.exe --list-hid` и найдите устройство по названию: VID, PID и интерфейсы (`mi_xx`).
-2. Если у производителя есть программа, показывающая заряд, — послушайте её ответы на служебных интерфейсах (пакеты приходят всем, кто читает канал) или запишите трафик Wireshark + USBPcap.
-3. Добавьте модель в подходящий модуль, например строку в таблицу `Models` в `src/Providers/HeadsetsProvider.cs`.
+1. Download the latest version from [Releases](../../releases/latest) and unpack it to any folder, for example `%LOCALAPPDATA%\Programs\BatteryBar`.
+2. Install the [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) if you don't have it yet (Windows will offer it on first launch).
+3. Run `BatteryBar.exe`. Click its tray icon to open the settings; turn on **Start with Windows** there.
+
+**Requirements:** Windows 11. On Windows 10 the tray icons should work, but the taskbar block is not supported yet.
+
+### Tray icons are hidden?
+
+Windows 11 hides new tray icons under the ^ arrow. To keep them visible, open **Windows Settings → Personalization → Taskbar → Other system tray icons** and turn on the ones you need, or simply drag an icon from under the arrow onto the taskbar.
+
+## Privacy
+
+BatteryBar works entirely on your computer: no accounts, no telemetry, no internet access. It only reads battery information from your devices and sends them nothing but read-only battery queries — and only to devices it recognises exactly. The only time it opens the internet is when you press **Send to GitHub** yourself.
+
+## For developers
+
+Building from source, project structure and how to add support for a new device: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+Device protocols are based on the public descriptions from [HeadsetControl](https://github.com/Sapd/HeadsetControl), [HyperHeadset](https://github.com/LennardKittner/HyperHeadset), [OpenRazer](https://github.com/openrazer/openrazer), [OpenPods](https://github.com/adolfintel/OpenPods) and [Solaar](https://github.com/pwr-Solaar/Solaar); the code is written from scratch.
