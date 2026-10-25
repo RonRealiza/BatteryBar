@@ -18,6 +18,16 @@ powershell -ExecutionPolicy Bypass -File tools\publish.ps1
 
 Перерисовать иконку приложения (`assets/BatteryBar.ico`): `tools\make-icon.ps1`.
 
+### Релиз
+
+Версия берётся из `<Version>` в `BatteryBar.csproj`. Собрать установщик и портативную версию в папку `dist` (нужен [Inno Setup 6](https://jrsoftware.org/isinfo.php): `winget install JRSoftware.InnoSetup`):
+
+```bash
+powershell -ExecutionPolicy Bypass -File tools\release.ps1
+```
+
+Сценарий установщика — `installer\BatteryBar.iss` (сохранять в UTF-8 с BOM, иначе русские строки испортятся). Портативный режим включается файлом-меткой `portable` рядом с exe: тогда настройки и журнал пишутся в папку `data` рядом с программой.
+
 ### Ключи запуска
 
 | Ключ | Что делает |

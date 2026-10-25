@@ -9,8 +9,14 @@ internal static class Log
     private const long MaxSize = 1024 * 1024;
     private static readonly object Sync = new();
 
+    /// <summary>
+    /// Папка данных (журнал, настройки, последний заряд). В портативной версии рядом с exe лежит файл-метка
+    /// «portable» — тогда данные хранятся в папке data рядом с программой, а не в профиле пользователя.
+    /// </summary>
     public static string Directory { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatteryBar");
+        File.Exists(Path.Combine(AppContext.BaseDirectory, "portable"))
+            ? Path.Combine(AppContext.BaseDirectory, "data")
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatteryBar");
 
     public static string FilePath { get; } = Path.Combine(Directory, "log.txt");
 

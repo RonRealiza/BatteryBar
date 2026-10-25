@@ -65,9 +65,14 @@ Open **Settings → Device not detected?**, pick the device and press **Send to 
 
 ## Installation
 
-1. Download the latest version from [Releases](../../releases/latest) and unpack it to any folder, for example `%LOCALAPPDATA%\Programs\BatteryBar`.
-2. Install the [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) if you don't have it yet (Windows will offer it on first launch).
-3. Run `BatteryBar.exe`. Click its tray icon to open the settings; turn on **Start with Windows** there.
+Download the latest version from [Releases](../../releases/latest) — pick one:
+
+- **`BatteryBar-…-Setup.exe` — installer.** Installs for the current user (no admin rights needed), adds a Start menu shortcut and, optionally, starts with Windows. Uninstall it as usual in **Settings → Apps**.
+- **`BatteryBar-…-Portable.zip` — portable.** Unpack anywhere, even to a USB stick, and run `BatteryBar.exe`. Settings are kept next to the program in the `data` folder.
+
+Both need the [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) (free, from Microsoft). If it is missing, the installer offers to open the download page, and the portable version asks for it on first launch.
+
+Click the BatteryBar tray icon to open the settings.
 
 **Requirements:** Windows 11. On Windows 10 the tray icons should work, but the taskbar block is not supported yet.
 
