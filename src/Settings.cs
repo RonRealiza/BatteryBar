@@ -18,6 +18,9 @@ internal sealed class Settings
 
     public Language Language { get; set; } = Language.Auto;
 
+    /// <summary>Проверять обновления на GitHub автоматически (после запуска и раз в 12 часов).</summary>
+    public bool AutoCheckUpdates { get; set; } = true;
+
     public DisplayMode Display { get; set; } = DisplayMode.Taskbar;
 
     [JsonIgnore] public bool ShowOnTaskbar => Display != DisplayMode.Tray;

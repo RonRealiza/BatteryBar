@@ -13,10 +13,11 @@ internal static class Log
     /// Папка данных (журнал, настройки, последний заряд). В портативной версии рядом с exe лежит файл-метка
     /// «portable» — тогда данные хранятся в папке data рядом с программой, а не в профиле пользователя.
     /// </summary>
-    public static string Directory { get; } =
-        File.Exists(Path.Combine(AppContext.BaseDirectory, "portable"))
-            ? Path.Combine(AppContext.BaseDirectory, "data")
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatteryBar");
+    public static bool IsPortable { get; } = File.Exists(Path.Combine(AppContext.BaseDirectory, "portable"));
+
+    public static string Directory { get; } = IsPortable
+        ? Path.Combine(AppContext.BaseDirectory, "data")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BatteryBar");
 
     public static string FilePath { get; } = Path.Combine(Directory, "log.txt");
 

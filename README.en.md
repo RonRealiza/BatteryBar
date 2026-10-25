@@ -28,6 +28,7 @@
 - **Windows 11 look.** Settings window and tray menu in the native Fluent style, light or dark — follows your Windows theme.
 - **English and Russian.** Picks your system language by default.
 - **Starts with Windows**, if you want it to.
+- **One-click updates.** A red dot on the tray icon tells you a new version is out; install it right from Settings.
 
 ## Tray icons
 
@@ -90,7 +91,11 @@ Windows 11 hides new tray icons under the ^ arrow. To keep them visible, open **
 
 ## Privacy
 
-BatteryBar works entirely on your computer: no accounts, no telemetry, no internet access. It only reads battery information from your devices and sends them nothing but read-only battery queries — and only to devices it recognises exactly. The only time it opens the internet is when you press **Send to GitHub** yourself.
+BatteryBar works on your computer: no accounts, no telemetry. It only reads battery information from your devices and sends them nothing but read-only battery queries — and only to devices it recognises exactly.
+
+It goes online in two cases:
+- **update check** — after start and every 12 hours it asks GitHub for the latest version number. Nothing about you or your devices is sent. Automatic checks can be turned off in Settings;
+- when you press **Send to GitHub** or **Suggest an improvement** yourself — a page opens in your browser.
 
 ## For developers
 

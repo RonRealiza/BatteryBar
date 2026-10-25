@@ -22,6 +22,10 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     private readonly NotifyIcon _tray;
     private readonly DeviceTrayIcons _deviceTray;
     private readonly TrayMenu _menu;
+    private readonly Updater _updater;
+    private readonly System.Windows.Forms.Timer _updateTimer;
+    private readonly Icon _icon;
+    private readonly Icon _iconWithDot; // с красной точкой — есть обновление
     private SettingsWindow? _settingsWindow;
     private readonly BatteryMonitor _monitor;
     private readonly System.Windows.Forms.Timer _topmostTimer;
@@ -38,6 +42,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         // Первый контрол ставит WindowsFormsSynchronizationContext для UI-потока.
         using (var probe = new Control()) _ = probe.Handle;
         _ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+        _updater = new Updater(_ui);
+        _updater.Changed += () => _tray!.Icon = _updater.Available != null ? _iconWithDot : _icon;
 
         // Окно настроек и меню трея — WPF с темой Fluent (стиль Windows 11, светлая/тёмная по системе).
         // Объект Application нужен для ресурсов темы; цикл сообщений остаётся у WinForms.
@@ -46,16 +52,23 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 #pragma warning disable WPF0001 // ThemeMode в .NET 9 помечен как экспериментальный
         wpf.ThemeMode = System.Windows.ThemeMode.System;
 #pragma warning restore WPF0001
+        _icon = CreateTrayIcon(withDot: false);
+        _iconWithDot = CreateTrayIcon(withDot: true);
 
         var menu = _menu = new TrayMenu();
         menu.Add(() => L.MenuSettings, "", OpenSettings);
         menu.Add(() => L.MenuRefresh, "", () => _monitor!.RefreshNow());
+        menu.Add(() => L.MenuInstallUpdate(_updater!.Available!.Version), "", () =>
+        {
+            OpenSettings();
+            InstallUpdate();
+        }, visible: () => _updater!.Available != null && !_updater.IsBusy);
         menu.AddSeparator();
         menu.Add(() => L.MenuExit, "", ExitThread);
 
         _tray = new NotifyIcon
         {
-            Icon = CreateTrayIcon(),
+            Icon = _icon,
             Text = "BatteryBar",
             Visible = true,
         };
@@ -93,6 +106,16 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
             foreach (var overlay in _overlays.Values) overlay.KeepOnTop();
         };
         _topmostTimer.Start();
+
+        // Обновления: первая проверка через 30 секунд после запуска, дальше раз в 12 часов (если не отключено).
+        _updateTimer = new System.Windows.Forms.Timer { Interval = 30_000 };
+        _updateTimer.Tick += async (_, _) =>
+        {
+            _updateTimer.Interval = (int)TimeSpan.FromHours(12).TotalMilliseconds;
+            if (_settings.AutoCheckUpdates && _updater.State != UpdateState.Available)
+                await _updater.CheckAsync();
+        };
+        _updateTimer.Start();
 
         // UI Automation к explorer.exe может подтормаживать — держим его вне UI-потока.
         _layoutThread = new Thread(LayoutLoop) { IsBackground = true, Name = "TaskbarLayout" };
@@ -237,6 +260,12 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 
     void ISettingsHost.RefreshNow() => _monitor.RefreshNow();
 
+    Updater ISettingsHost.Updater => _updater;
+
+    void ISettingsHost.InstallUpdate() => InstallUpdate();
+
+    private void InstallUpdate() => _ = _updater.InstallAsync(ExitThread);
+
     void ISettingsHost.LanguageChanged()
     {
         _settings.Save();
@@ -280,11 +309,30 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     };
 
     /// <summary>Иконка приложения из ресурсов, в размере маленьких иконок трея для текущего масштаба.</summary>
-    private static Icon CreateTrayIcon()
+    /// <param name="withDot">Добавить красную точку в правый верхний угол — вышла новая версия.</param>
+    private static Icon CreateTrayIcon(bool withDot)
     {
         var info = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/assets/BatteryBar.ico"));
         using var stream = info.Stream;
-        return new Icon(stream, SystemInformation.SmallIconSize);
+        var icon = new Icon(stream, SystemInformation.SmallIconSize);
+        if (!withDot) return icon;
+
+        int size = icon.Width;
+        using var bmp = new Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.DrawIcon(icon, new Rectangle(0, 0, size, size));
+            float d = size * 0.5f;
+            var dot = new RectangleF(size - d, 0, d, d);
+            using var outline = new SolidBrush(Color.FromArgb(255, 32, 32, 32));
+            using var red = new SolidBrush(Color.FromArgb(255, 232, 64, 72));
+            g.FillEllipse(outline, dot);
+            dot.Inflate(-Math.Max(1f, size / 16f), -Math.Max(1f, size / 16f));
+            g.FillEllipse(red, dot);
+        }
+        icon.Dispose();
+        return Icon.FromHandle(bmp.GetHicon());
     }
 
     private static bool IsAutostart()
@@ -307,6 +355,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         _stopped = true;
         _monitor.Dispose();
         _topmostTimer.Dispose();
+        _updateTimer.Dispose();
         _settingsWindow?.Close();
         _tray.Visible = false;
         _tray.Dispose();

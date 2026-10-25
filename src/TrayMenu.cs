@@ -17,14 +17,16 @@ internal sealed class TrayMenu
 {
     private static readonly FontFamily IconFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
-    private readonly List<(Func<string>? Text, string? Glyph, Action? Action)> _items = new();
+    private readonly List<(Func<string>? Text, string? Glyph, Action? Action, Func<bool>? Visible)> _items = new();
     private ContextMenu? _open;
 
     /// <param name="text">Текст пункта; читается при каждом открытии, чтобы смена языка применялась сразу.</param>
     /// <param name="glyph">Значок из Segoe Fluent Icons, например "" — шестерёнка.</param>
-    public void Add(Func<string> text, string glyph, Action action) => _items.Add((text, glyph, action));
+    /// <param name="visible">Показывать ли пункт (проверяется при каждом открытии); null — всегда.</param>
+    public void Add(Func<string> text, string glyph, Action action, Func<bool>? visible = null) =>
+        _items.Add((text, glyph, action, visible));
 
-    public void AddSeparator() => _items.Add((null, null, null));
+    public void AddSeparator(Func<bool>? visible = null) => _items.Add((null, null, null, visible));
 
     /// <summary>Показать меню у курсора.</summary>
     public void Show()
@@ -33,8 +35,9 @@ internal sealed class TrayMenu
 
         // Размеры подогнаны под системные меню Windows 11 (например, у значка сети).
         var menu = new ContextMenu { Placement = PlacementMode.MousePoint, MinWidth = 220 };
-        foreach (var (text, glyph, action) in _items)
+        foreach (var (text, glyph, action, visible) in _items)
         {
+            if (visible != null && !visible()) continue;
             if (text == null)
             {
                 menu.Items.Add(new Separator());

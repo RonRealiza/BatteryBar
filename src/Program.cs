@@ -18,7 +18,18 @@ internal static class Program
         }
 
         using var mutex = new Mutex(true, @"Local\BatteryBar.SingleInstance", out bool first);
-        if (!first) return;
+        if (!first)
+        {
+            // Сразу после обновления старая копия может ещё закрываться — ждём её, а не выходим.
+            if (!args.Contains("--updated") || !WaitForPreviousInstance(mutex)) return;
+        }
+
+        // Портативная версия после обновления оставляет старый exe рядом — удаляем его.
+        if (Environment.ProcessPath is { } exe)
+        {
+            try { System.IO.File.Delete(exe + ".old"); }
+            catch { /* ещё занят — удалим при следующем запуске */ }
+        }
 
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
@@ -34,5 +45,17 @@ internal static class Program
         if (args.Contains("--menu"))
             app.ShowMenuOnStart();
         Application.Run(app);
+    }
+
+    private static bool WaitForPreviousInstance(Mutex mutex)
+    {
+        try
+        {
+            return mutex.WaitOne(TimeSpan.FromSeconds(20));
+        }
+        catch (AbandonedMutexException)
+        {
+            return true; // старая копия завершилась, не отпустив мьютекс, — он теперь наш
+        }
     }
 }

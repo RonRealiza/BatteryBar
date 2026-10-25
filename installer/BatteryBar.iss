@@ -60,6 +60,8 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\BatteryBar.exe"; Description: "{cm:LaunchProgram,BatteryBar}"; Flags: nowait postinstall skipifsilent
+; Тихая установка — это обновление из самой программы: после него запускаем BatteryBar снова.
+Filename: "{app}\BatteryBar.exe"; Flags: nowait; Check: WizardSilent
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/IM BatteryBar.exe /F"; Flags: runhidden; RunOnceId: "StopBatteryBar"

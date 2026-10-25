@@ -27,6 +27,11 @@ internal interface ISettingsHost
     /// <summary>Язык сменился: применить его и переоткрыть окно настроек уже на новом языке.</summary>
     void LanguageChanged();
 
+    Updater Updater { get; }
+
+    /// <summary>Скачать и установить найденное обновление (программа закроется и перезапустится).</summary>
+    void InstallUpdate();
+
     event Action DevicesChanged;
 }
 
@@ -47,17 +52,75 @@ internal partial class SettingsWindow : Window
         DisplayCombo.SelectedIndex = (int)host.Settings.Display;
         LanguageCombo.SelectedIndex = (int)host.Settings.Language;
         AutostartCheck.IsChecked = host.Autostart;
+        AutoUpdateCheck.IsChecked = host.Settings.AutoCheckUpdates;
         if (host.IsDebugBuild)
             AutostartHint.Text = L.AutostartDebugHint;
         LoadMonitors();
         _loading = false;
 
-        VersionText.Text = $"BatteryBar {Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)}";
+        VersionText.Text = $"BatteryBar {Updater.Current}";
         UpdateDevices();
         UpdateEnabledState();
+        UpdateUpdateCard();
 
         host.DevicesChanged += UpdateDevices;
-        Closed += (_, _) => host.DevicesChanged -= UpdateDevices;
+        host.Updater.Changed += UpdateUpdateCard;
+        Closed += (_, _) =>
+        {
+            host.DevicesChanged -= UpdateDevices;
+            host.Updater.Changed -= UpdateUpdateCard;
+        };
+    }
+
+    /// <summary>Текст, кнопка и красная точка карточки «Обновления» по состоянию проверки.</summary>
+    private void UpdateUpdateCard()
+    {
+        var u = _host.Updater;
+        var latest = u.Available?.Version;
+        UpdateStatusText.Text = u.State switch
+        {
+            UpdateState.Checking => L.UpdateChecking,
+            UpdateState.UpToDate => L.UpdateUpToDate(Updater.Current),
+            UpdateState.Available => L.UpdateAvailable(latest!),
+            UpdateState.Downloading => L.UpdateDownloading(u.Progress),
+            UpdateState.Installing => L.UpdateInstalling,
+            UpdateState.Failed => L.UpdateFailed(u.Error ?? "?"),
+            _ => L.UpdateCurrent(Updater.Current),
+        };
+        UpdateButton.Content = u.State switch
+        {
+            UpdateState.Available => L.UpdateInstallButton,
+            UpdateState.Failed => L.UpdateRetryButton,
+            UpdateState.Downloading or UpdateState.Installing => L.UpdateInstallButton,
+            _ => L.UpdateCheckButton,
+        };
+        UpdateButton.IsEnabled = !u.IsBusy;
+        bool available = u.Available != null;
+        UpdateButton.Style = available ? (Style)FindResource("AccentButtonStyle") : null;
+        UpdateDot.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+        WhatsNewText.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async void UpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Есть найденная версия — ставим её (и при «Повторить» после неудачной загрузки), иначе проверяем.
+        if (_host.Updater.Available != null)
+            _host.InstallUpdate();
+        else
+            await _host.Updater.CheckAsync();
+    }
+
+    private void WhatsNew_Click(object sender, RoutedEventArgs e)
+    {
+        if (_host.Updater.Available is { } info)
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(info.PageUrl) { UseShellExecute = true });
+    }
+
+    private void AutoUpdateCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _host.Settings.AutoCheckUpdates = AutoUpdateCheck.IsChecked == true;
+        _host.ApplySettings();
     }
 
     private void UpdateDevices()

@@ -213,6 +213,33 @@
             <!-- Обслуживание -->
             <TextBlock Text="{x:Static local:L.MaintenanceHeader}" Style="{StaticResource SectionHeader}" />
             <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid>
+                            <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE895;" />
+                            <!-- Красная точка, как на значке в трее, когда есть новая версия. -->
+                            <Ellipse x:Name="UpdateDot" Width="9" Height="9" Fill="#E8505B" HorizontalAlignment="Right"
+                                     VerticalAlignment="Top" Margin="0,0,14,0" Visibility="Collapsed" />
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.UpdatesTitle}" />
+                            <TextBlock x:Name="UpdateStatusText" Style="{StaticResource Secondary}" />
+                            <TextBlock x:Name="WhatsNewText" Margin="0,2,0,0" FontSize="12" Visibility="Collapsed">
+                                <Hyperlink Click="WhatsNew_Click"><Run Text="{x:Static local:L.UpdateWhatsNew}" /></Hyperlink>
+                            </TextBlock>
+                        </StackPanel>
+                        <Button x:Name="UpdateButton" Grid.Column="2" MinWidth="140" VerticalAlignment="Center" Click="UpdateButton_Click" />
+                    </Grid>
+                    <CheckBox x:Name="AutoUpdateCheck" Content="{x:Static local:L.UpdatesAuto}" Margin="40,12,0,0"
+                              Checked="AutoUpdateCheck_Changed" Unchecked="AutoUpdateCheck_Changed" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
