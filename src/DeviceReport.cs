@@ -24,7 +24,7 @@ internal sealed record ReportCandidate(string Title, int? VendorId, int? Product
 /// </summary>
 internal static class DeviceReport
 {
-    public const string RepoUrl = "https://github.com/lllyubimov/BatteryBar";
+    public const string RepoUrl = "https://github.com/RonRealiza/BatteryBar";
 
     /// <summary>Подключённые HID-устройства (по одному на VID/PID) и сопряжённые Bluetooth-устройства.</summary>
     public static List<ReportCandidate> Candidates()
