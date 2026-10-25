@@ -1,0 +1,194 @@
+<Window x:Class="BatteryBar.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:ClassModifier="internal"
+        Title="BatteryBar — настройки"
+        Icon="pack://application:,,,/assets/BatteryBar.ico"
+        Width="680" Height="760" MinWidth="500" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,14" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="2,24,0,8" />
+        </Style>
+
+        <Style x:Key="CardGlyph" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="2,0,18,0" />
+        </Style>
+
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="Secondary" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Window.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="36,28,36,36">
+            <TextBlock Text="BatteryBar" FontSize="28" FontWeight="SemiBold" />
+            <TextBlock Style="{StaticResource Secondary}" Margin="0,4,0,0" FontSize="13"
+                       Text="Заряд беспроводных устройств на панели задач Windows" />
+
+            <!-- Устройства -->
+            <TextBlock Text="Устройства" Style="{StaticResource SectionHeader}" />
+            <ItemsControl x:Name="DevicesList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource CardGlyph}" Text="{Binding Glyph}" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Name}" />
+                                    <TextBlock Style="{StaticResource Secondary}" Text="{Binding Status}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE945;" FontSize="14"
+                                               VerticalAlignment="Center" Margin="0,0,6,0"
+                                               Foreground="{Binding ChargeBrush}" Visibility="{Binding ChargeVisibility}" />
+                                    <TextBlock Text="{Binding PercentText}" FontSize="20" FontWeight="SemiBold"
+                                               Foreground="{Binding PercentBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border x:Name="NoDevicesCard" Style="{StaticResource Card}">
+                <TextBlock Style="{StaticResource Secondary}" FontSize="13"
+                           Text="Подключённых устройств не найдено. Включите мышь, клавиатуру, гарнитуру или геймпад — они появятся здесь в течение нескольких секунд." />
+            </Border>
+
+            <!-- Отображение -->
+            <TextBlock Text="Отображение" Style="{StaticResource SectionHeader}" />
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE7F4;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Где показывать заряд" />
+                        <TextBlock Style="{StaticResource Secondary}"
+                                   Text="Блок на панели задач рядом с погодой или отдельные иконки в трее" />
+                    </StackPanel>
+                    <ComboBox x:Name="DisplayCombo" Grid.Column="2" MinWidth="220" VerticalAlignment="Center"
+                              SelectionChanged="DisplayCombo_SelectionChanged">
+                        <ComboBoxItem Content="На панели задач" />
+                        <ComboBoxItem Content="В трее" />
+                        <ComboBoxItem Content="На панели задач и в трее" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <Border x:Name="MonitorsCard" Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE7F9;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="Мониторы" />
+                            <TextBlock Style="{StaticResource Secondary}"
+                                       Text="На панелях задач каких мониторов показывать блок" />
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Margin="40,12,0,0">
+                        <RadioButton x:Name="PrimaryRadio" GroupName="Monitors" Content="Только главный" Margin="0,2"
+                                     Checked="MonitorMode_Checked" />
+                        <RadioButton x:Name="AllRadio" GroupName="Monitors" Content="Все мониторы" Margin="0,2"
+                                     Checked="MonitorMode_Checked" />
+                        <RadioButton x:Name="SelectedRadio" GroupName="Monitors" Content="Выбранные" Margin="0,2"
+                                     Checked="MonitorMode_Checked" />
+                        <StackPanel x:Name="MonitorChecks" Margin="28,4,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Запуск -->
+            <TextBlock Text="Запуск" Style="{StaticResource SectionHeader}" />
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE7E8;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Запускать вместе с Windows" />
+                        <TextBlock x:Name="AutostartHint" Style="{StaticResource Secondary}"
+                                   Text="BatteryBar будет стартовать после входа в систему" />
+                    </StackPanel>
+                    <CheckBox x:Name="AutostartCheck" Grid.Column="2" VerticalAlignment="Center"
+                              Checked="AutostartCheck_Changed" Unchecked="AutostartCheck_Changed" />
+                </Grid>
+            </Border>
+
+            <!-- Обслуживание -->
+            <TextBlock Text="Обслуживание" Style="{StaticResource SectionHeader}" />
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE72C;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Обновить заряд" />
+                        <TextBlock Style="{StaticResource Secondary}"
+                                   Text="Опросить все устройства прямо сейчас, не дожидаясь очередного опроса" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="Обновить сейчас" MinWidth="140" Click="Refresh_Click" />
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE8A5;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Журнал" />
+                        <TextBlock Style="{StaticResource Secondary}"
+                                   Text="Подробности о подключении устройств — пригодится, если что-то не определяется" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="Открыть журнал" MinWidth="140" Click="OpenLog_Click" />
+                </Grid>
+            </Border>
+
+            <TextBlock x:Name="VersionText" Style="{StaticResource Secondary}" Margin="2,20,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>
