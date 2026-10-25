@@ -1,0 +1,22 @@
+name: Idea
+description: An idea, wish or improvement for BatteryBar
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What do you suggest?
+      description: Describe your idea in your own words
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is it useful?
+      description: What problem it solves, what is inconvenient now
+  - type: input
+    id: version
+    attributes:
+      label: BatteryBar version
+      description: Filled in automatically when the issue is opened from the app

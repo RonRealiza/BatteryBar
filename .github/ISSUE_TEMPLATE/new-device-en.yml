@@ -1,0 +1,41 @@
+name: New device
+description: BatteryBar doesn't show the battery of my device
+title: "[Device] "
+labels: ["device-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! The easiest way is to send the request from the app itself: **Settings → "Device not detected?"** — the report is filled in automatically.
+  - type: input
+    id: model
+    attributes:
+      label: Device model
+      placeholder: for example, Razer Viper V2 Pro
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: How is it connected
+      options:
+        - USB receiver (2.4 GHz)
+        - Bluetooth
+        - Cable
+        - Not sure
+  - type: dropdown
+    id: vendor-app
+    attributes:
+      label: Does the vendor's own app show the battery?
+      options:
+        - "Yes"
+        - "No"
+        - No app / not sure
+  - type: textarea
+    id: report
+    attributes:
+      label: BatteryBar report
+      description: Filled in by the app automatically. If you create the issue manually, paste the report from "Copy report".
+      render: text
+    validations:
+      required: true

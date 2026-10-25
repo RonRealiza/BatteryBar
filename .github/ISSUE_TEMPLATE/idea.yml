@@ -1,0 +1,22 @@
+name: Предложение
+description: Идея, пожелание или улучшение для BatteryBar
+title: "[Идея] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Что предлагаете?
+      description: Опишите идею своими словами
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Зачем это нужно?
+      description: Какую задачу это решает, что сейчас неудобно
+  - type: input
+    id: version
+    attributes:
+      label: Версия BatteryBar
+      description: Заполняется автоматически, если заявка открыта из программы
