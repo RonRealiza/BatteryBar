@@ -16,6 +16,8 @@ internal sealed class Settings
 {
     private static readonly string FilePath = Path.Combine(Log.Directory, "settings.json");
 
+    public Language Language { get; set; } = Language.Auto;
+
     public DisplayMode Display { get; set; } = DisplayMode.Taskbar;
 
     [JsonIgnore] public bool ShowOnTaskbar => Display != DisplayMode.Tray;

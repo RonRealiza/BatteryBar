@@ -17,11 +17,12 @@ internal sealed class TrayMenu
 {
     private static readonly FontFamily IconFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
-    private readonly List<(string? Text, string? Glyph, Action? Action)> _items = new();
+    private readonly List<(Func<string>? Text, string? Glyph, Action? Action)> _items = new();
     private ContextMenu? _open;
 
+    /// <param name="text">Текст пункта; читается при каждом открытии, чтобы смена языка применялась сразу.</param>
     /// <param name="glyph">Значок из Segoe Fluent Icons, например "" — шестерёнка.</param>
-    public void Add(string text, string glyph, Action action) => _items.Add((text, glyph, action));
+    public void Add(Func<string> text, string glyph, Action action) => _items.Add((text, glyph, action));
 
     public void AddSeparator() => _items.Add((null, null, null));
 
@@ -41,7 +42,7 @@ internal sealed class TrayMenu
             }
             var item = new MenuItem
             {
-                Header = text,
+                Header = text(),
                 Icon = new TextBlock { Text = glyph, FontFamily = IconFont, FontSize = 16, Margin = new Thickness(0, 0, 4, 0) },
                 Padding = new Thickness(4, 2, 16, 2),
             };

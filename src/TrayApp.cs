@@ -33,6 +33,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 
     public TrayApp()
     {
+        L.Apply(_settings.Language);
+
         // Первый контрол ставит WindowsFormsSynchronizationContext для UI-потока.
         using (var probe = new Control()) _ = probe.Handle;
         _ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
@@ -46,10 +48,10 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 #pragma warning restore WPF0001
 
         var menu = _menu = new TrayMenu();
-        menu.Add("Настройки", "", OpenSettings);
-        menu.Add("Обновить заряд", "", () => _monitor!.RefreshNow());
+        menu.Add(() => L.MenuSettings, "", OpenSettings);
+        menu.Add(() => L.MenuRefresh, "", () => _monitor!.RefreshNow());
         menu.AddSeparator();
-        menu.Add("Выход", "", ExitThread);
+        menu.Add(() => L.MenuExit, "", ExitThread);
 
         _tray = new NotifyIcon
         {
@@ -235,12 +237,36 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 
     void ISettingsHost.RefreshNow() => _monitor.RefreshNow();
 
+    void ISettingsHost.LanguageChanged()
+    {
+        _settings.Save();
+        L.Apply(_settings.Language);
+        Log.Write($"language: {_settings.Language} (english={L.En})");
+        UpdateTooltip();
+        Redraw();
+
+        // Тексты окна читаются при его создании — переоткрываем на том же месте, уже после текущего события.
+        if (_settingsWindow is not { } old) return;
+        double left = old.Left, top = old.Top;
+        _ui.Post(_ =>
+        {
+            old.Close();
+            OpenSettings();
+            if (_settingsWindow is { } fresh)
+            {
+                fresh.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
+                fresh.Left = left;
+                fresh.Top = top;
+            }
+        }, null);
+    }
+
     void ISettingsHost.OpenLog() => OpenLog();
 
     private void UpdateTooltip()
     {
         string text = _devices.Count == 0
-            ? "BatteryBar — устройства не найдены"
+            ? L.NoDevicesTooltip
             : string.Join("\n", _devices.Select(d =>
                 $"{d.Name}: {(d.Percent is { } p ? p + "%" : "?")}{StateSuffix(d.State)}"));
         // NotifyIcon.Text ограничен 127 символами.
@@ -249,8 +275,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 
     private static string StateSuffix(ChargeState state) => state switch
     {
-        ChargeState.Charging => " (заряжается)",
-        ChargeState.Full => " (заряжено)",
+        ChargeState.Charging => L.ChargingSuffix,
+        ChargeState.Full => L.FullSuffix,
         _ => "",
     };
 

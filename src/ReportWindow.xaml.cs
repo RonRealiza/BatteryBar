@@ -30,7 +30,7 @@ internal partial class ReportWindow : Window
         // Перечисление устройств и Bluetooth занимает до секунды — не держим окно.
         DeviceCombo.ItemsSource = await Task.Run(DeviceReport.Candidates);
         DeviceCombo.IsEnabled = true;
-        ComboHint.Text = "Выберите устройство из списка подключённых";
+        ComboHint.Text = L.ReportPick;
         DeviceCombo.IsDropDownOpen = true;
     }
 
@@ -61,13 +61,13 @@ internal partial class ReportWindow : Window
     private void Copy_Click(object sender, RoutedEventArgs e)
     {
         Clipboard.SetText(PreviewBox.Text);
-        StatusText.Text = "Отчёт скопирован — можно вставить в письмо или сообщение";
+        StatusText.Text = L.ReportCopied;
     }
 
     private void Send_Click(object sender, RoutedEventArgs e)
     {
         string model = ModelBox.Text.Trim();
-        string title = $"[Устройство] {model}";
+        string title = $"{L.ReportIssuePrefix} {model}";
         string report = PreviewBox.Text;
 
         string url = DeviceReport.IssueUrl(title, model, report);
@@ -75,12 +75,12 @@ internal partial class ReportWindow : Window
         if (url.Length > MaxUrlLength)
         {
             Clipboard.SetText(report);
-            url = DeviceReport.IssueUrl(title, model, "Отчёт скопирован в буфер обмена — вставьте его сюда (Ctrl+V).");
-            StatusText.Text = "Отчёт длинный и скопирован в буфер — вставьте его в заявку (Ctrl+V)";
+            url = DeviceReport.IssueUrl(title, model, L.ReportPasteHere);
+            StatusText.Text = L.ReportTooLong;
         }
         else
         {
-            StatusText.Text = "Открываю GitHub — проверьте заявку и нажмите «Create»";
+            StatusText.Text = L.ReportOpening;
         }
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }

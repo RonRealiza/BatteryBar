@@ -33,13 +33,13 @@ internal static class DeviceReport
         foreach (var group in DeviceList.Local.GetHidDevices().GroupBy(d => (d.VendorID, d.ProductID)))
         {
             string name = group.Select(d => Safe(d.GetProductName)).FirstOrDefault(n => n.Length > 0) ?? "";
-            if (name.Length == 0) name = "Без названия";
+            if (name.Length == 0) name = L.ReportUnnamed;
             list.Add(new ReportCandidate($"{name}  ({group.Key.VendorID:X4}:{group.Key.ProductID:X4})",
                 group.Key.VendorID, group.Key.ProductID, null, true));
         }
 
         foreach (var (name, connected) in BluetoothDevices())
-            list.Add(new ReportCandidate($"{name}  (Bluetooth{(connected ? ", подключено" : "")})", null, null, name, connected));
+            list.Add(new ReportCandidate($"{name}  (Bluetooth{(connected ? ", " + L.ReportConnected : "")})", null, null, name, connected));
 
         return list.OrderBy(c => c.BluetoothName != null).ThenBy(c => c.Title, StringComparer.CurrentCultureIgnoreCase).ToList();
     }

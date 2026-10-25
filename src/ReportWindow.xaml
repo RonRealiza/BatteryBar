@@ -1,8 +1,9 @@
 <Window x:Class="BatteryBar.ReportWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:BatteryBar"
         x:ClassModifier="internal"
-        Title="BatteryBar — устройство не определилось"
+        Title="{x:Static local:L.ReportWindowTitle}"
         Icon="pack://application:,,,/assets/BatteryBar.ico"
         Width="640" SizeToContent="Height" ResizeMode="CanMinimize"
         WindowStartupLocation="CenterOwner">
@@ -20,27 +21,27 @@
     </Window.Resources>
 
     <StackPanel Margin="32,24,32,28">
-        <TextBlock Text="Устройство не определилось?" FontSize="24" FontWeight="SemiBold" />
+        <TextBlock Text="{x:Static local:L.NotDetectedTitle}" FontSize="24" FontWeight="SemiBold" />
         <TextBlock Style="{StaticResource Secondary}" Margin="0,6,0,0" FontSize="13"
-                   Text="Выберите устройство — по отчёту о нём можно будет добавить поддержку. Перед отправкой виден весь текст." />
+                   Text="{x:Static local:L.ReportIntro}" />
 
-        <TextBlock Style="{StaticResource Label}" Text="Устройство" />
+        <TextBlock Style="{StaticResource Label}" Text="{x:Static local:L.ReportDevice}" />
         <ComboBox x:Name="DeviceCombo" HorizontalAlignment="Stretch" IsEnabled="False"
                   SelectionChanged="DeviceCombo_SelectionChanged" />
-        <TextBlock x:Name="ComboHint" Style="{StaticResource Secondary}" Margin="2,4,0,0" Text="Ищем подключённые устройства…" />
+        <TextBlock x:Name="ComboHint" Style="{StaticResource Secondary}" Margin="2,4,0,0" Text="{x:Static local:L.ReportSearching}" />
 
         <!-- Остальное появляется после выбора устройства. -->
         <StackPanel x:Name="DetailsPanel" Visibility="Collapsed">
-            <TextBlock Style="{StaticResource Label}" Text="Модель" />
+            <TextBlock Style="{StaticResource Label}" Text="{x:Static local:L.ReportModel}" />
             <TextBox x:Name="ModelBox" TextChanged="Input_Changed" />
-            <TextBlock Style="{StaticResource Secondary}" Margin="2,4,0,0" Text="Например, «Razer Viper V2 Pro» или «Attack Shark X3»" />
+            <TextBlock Style="{StaticResource Secondary}" Margin="2,4,0,0" Text="{x:Static local:L.ReportModelHint}" />
 
-            <TextBlock Style="{StaticResource Label}" Text="Подробности" />
+            <TextBlock Style="{StaticResource Label}" Text="{x:Static local:L.ReportDetails}" />
             <TextBox x:Name="CommentBox" TextChanged="Input_Changed" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" />
             <TextBlock Style="{StaticResource Secondary}" Margin="2,4,0,0"
-                       Text="Как подключено (ресивер, Bluetooth, провод), показывает ли заряд фирменная программа производителя" />
+                       Text="{x:Static local:L.ReportDetailsHint}" />
 
-            <TextBlock Style="{StaticResource Label}" Text="Что будет отправлено" />
+            <TextBlock Style="{StaticResource Label}" Text="{x:Static local:L.ReportPreview}" />
             <TextBox x:Name="PreviewBox" Height="200" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas" FontSize="11.5"
                      TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
 
@@ -51,8 +52,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="StatusText" Style="{StaticResource Secondary}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <Button Grid.Column="1" Content="Скопировать отчёт" MinWidth="150" Margin="0,0,8,0" Click="Copy_Click" />
-                <Button x:Name="SendButton" Grid.Column="2" Content="Отправить на GitHub" MinWidth="170" Click="Send_Click"
+                <Button Grid.Column="1" Content="{x:Static local:L.ReportCopy}" MinWidth="150" Margin="0,0,8,0" Click="Copy_Click" />
+                <Button x:Name="SendButton" Grid.Column="2" Content="{x:Static local:L.ReportSend}" MinWidth="170" Click="Send_Click"
                         Style="{DynamicResource AccentButtonStyle}" />
             </Grid>
         </StackPanel>

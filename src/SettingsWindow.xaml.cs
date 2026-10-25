@@ -25,6 +25,9 @@ internal interface ISettingsHost
     void RefreshNow();
     void OpenLog();
 
+    /// <summary>Язык сменился: применить его и переоткрыть окно настроек уже на новом языке.</summary>
+    void LanguageChanged();
+
     event Action DevicesChanged;
 }
 
@@ -43,9 +46,10 @@ internal partial class SettingsWindow : Window
 
         _loading = true;
         DisplayCombo.SelectedIndex = (int)host.Settings.Display;
+        LanguageCombo.SelectedIndex = (int)host.Settings.Language;
         AutostartCheck.IsChecked = host.Autostart;
         if (host.IsDebugBuild)
-            AutostartHint.Text = "Сейчас запущена отладочная сборка — автозапуск будет указывать на неё";
+            AutostartHint.Text = L.AutostartDebugHint;
         LoadMonitors();
         _loading = false;
 
@@ -80,8 +84,8 @@ internal partial class SettingsWindow : Window
             bool hasTaskbar = _host.Layouts.Any(l => l.Monitor == screen.DeviceName);
             var check = new CheckBox
             {
-                Content = $"Монитор {i + 1}{(screen.Primary ? " (главный)" : "")} — {screen.Bounds.Width}×{screen.Bounds.Height}"
-                          + (hasTaskbar ? "" : " — нет панели задач"),
+                Content = $"{L.Monitor} {i + 1}{(screen.Primary ? L.PrimarySuffix : "")} — {screen.Bounds.Width}×{screen.Bounds.Height}"
+                          + (hasTaskbar ? "" : L.NoTaskbarSuffix),
                 Tag = screen.DeviceName,
                 IsChecked = s.SelectedMonitors.Contains(screen.DeviceName),
                 IsEnabled = hasTaskbar,
@@ -106,6 +110,13 @@ internal partial class SettingsWindow : Window
         _host.Settings.Display = (DisplayMode)DisplayCombo.SelectedIndex;
         _host.ApplySettings();
         UpdateEnabledState();
+    }
+
+    private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || LanguageCombo.SelectedIndex < 0) return;
+        _host.Settings.Language = (Language)LanguageCombo.SelectedIndex;
+        _host.LanguageChanged();
     }
 
     private void MonitorMode_Checked(object sender, RoutedEventArgs e)
@@ -185,10 +196,10 @@ internal partial class SettingsWindow : Window
             PercentText = d.Percent is { } p ? $"{p}%" : "—";
             Status = d.State switch
             {
-                ChargeState.Charging => "Заряжается",
-                ChargeState.Full => "Полностью заряжено",
-                _ when d.Percent is <= 20 => "Низкий заряд",
-                _ => "Работает от батареи",
+                ChargeState.Charging => L.Charging,
+                ChargeState.Full => L.FullyCharged,
+                _ when d.Percent is <= 20 => L.LowBattery,
+                _ => L.OnBattery,
             };
 
             bool low = d.Percent is <= 20 && d.State != ChargeState.Charging;

@@ -48,7 +48,7 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
 
         foreach (var d in devices)
         {
-            string key = $"{d.Percent}|{d.State}|{d.Name}|{light}";
+            string key = $"{d.Percent}|{d.State}|{d.Name}|{light}|{L.En}";
             if (_icons.TryGetValue(d.Id, out var existing) && existing.Key == key) continue;
 
             IntPtr icon = RenderIcon(d, light);
@@ -101,8 +101,8 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
         string percent = d.Percent is { } p ? $"{p}%" : "?";
         string state = d.State switch
         {
-            ChargeState.Charging => " — заряжается",
-            ChargeState.Full => " — заряжено",
+            ChargeState.Charging => L.ChargingSuffix,
+            ChargeState.Full => L.FullSuffix,
             _ => "",
         };
         return $"{d.Name}: {percent}{state}";

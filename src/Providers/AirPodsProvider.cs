@@ -60,7 +60,7 @@ internal sealed class AirPodsProvider : IBatteryProvider, IDisposable
         if (percent == null) return Array.Empty<DeviceBattery>();
 
         string Part(string label, int? v) => v is { } p ? $"{label} {p}%" : "";
-        string details = string.Join(", ", new[] { Part("L", pods.Left), Part("R", pods.Right), Part("футляр", pods.Case) }
+        string details = string.Join(", ", new[] { Part("L", pods.Left), Part("R", pods.Right), Part(L.CaseLabel, pods.Case) }
             .Where(s => s.Length > 0));
         var state = pods.Charging ? ChargeState.Charging : ChargeState.Discharging;
         return new[] { new DeviceBattery($"airpods:{name}", $"{name} ({details})", DeviceKind.Headset, percent, state) };
