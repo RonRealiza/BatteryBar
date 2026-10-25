@@ -96,7 +96,12 @@ internal partial class SettingsWindow : Window
         };
         UpdateButton.IsEnabled = !u.IsBusy;
         bool available = u.Available != null;
-        UpdateButton.Style = available ? (Style)FindResource("AccentButtonStyle") : null;
+        // Акцентная кнопка, когда есть что ставить. Иначе очищаем свойство, а не ставим null:
+        // null отключил бы и стиль Fluent из темы, и кнопка стала бы классической серой.
+        if (available)
+            UpdateButton.Style = (Style)FindResource("AccentButtonStyle");
+        else
+            UpdateButton.ClearValue(StyleProperty);
         UpdateDot.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
         WhatsNewText.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
     }
