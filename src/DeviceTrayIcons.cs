@@ -108,17 +108,21 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
         return $"{d.Name}: {percent}{state}";
     }
 
+    /// <summary>
+    /// Иконка: значок устройства сверху и полоска заряда снизу. Полоска обычного цвета темы,
+    /// зелёная во время зарядки и красная при низком заряде; точный процент — в подсказке.
+    /// </summary>
     private static IntPtr RenderIcon(DeviceBattery d, bool light)
     {
         int size = SystemInformation.SmallIconSize.Width;
-        string text = d.Percent is { } p ? p.ToString() : "?";
 
         var fg = light ? Color.FromArgb(255, 0, 0, 0) : Color.White;
-        var color = d.State == ChargeState.Charging
+        var barColor = d.State == ChargeState.Charging
             ? (light ? Color.FromArgb(255, 15, 123, 15) : Color.FromArgb(255, 108, 203, 95))
             : d.Percent is <= 20
-                ? (light ? Color.FromArgb(255, 196, 43, 28) : Color.FromArgb(255, 255, 120, 130))
+                ? (light ? Color.FromArgb(255, 196, 43, 28) : Color.FromArgb(255, 255, 99, 99))
                 : fg;
+        var trackColor = Color.FromArgb(light ? 70 : 90, fg);
 
         using var bmp = new Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bmp))
@@ -126,22 +130,44 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
             g.Clear(Color.Transparent);
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-            var fmt = StringFormat.GenericTypographic;
 
-            // Подбираем шрифт так, чтобы число (до «100») заняло всю ширину иконки.
-            float px = size * 0.9f;
-            Font font = new("Segoe UI", px, FontStyle.Bold, GraphicsUnit.Pixel);
-            var sz = g.MeasureString(text, font, PointF.Empty, fmt);
-            while (sz.Width > size + 1 && px > 6)
+            // Значок устройства — над полоской. Значки Segoe Fluent контурные с линией ~1 px, в 16 px их почти не видно,
+            // поэтому рисуем значок как контур и обводим его линией потолще.
+            int h = Math.Max(2, (int)Math.Round(size * 0.16) - 1); // 2 px при 16, 3 px при 24
+            float pad = Math.Max(0.9f, size * 0.06f);               // толщина обводки значка
+            using (var family = new FontFamily(OverlayWindow.IconFontName))
+            using (var path = new GraphicsPath())
             {
-                font.Dispose();
-                px -= 0.5f;
-                font = new Font("Segoe UI", px, FontStyle.Bold, GraphicsUnit.Pixel);
-                sz = g.MeasureString(text, font, PointF.Empty, fmt);
+                path.AddString(OverlayWindow.Glyph(d.Kind).ToString(), family, (int)FontStyle.Regular, size * 0.86f,
+                    PointF.Empty, StringFormat.GenericTypographic);
+                // Вписываем значок по центру области над полоской. Обводка выходит за контур на половину толщины,
+                // поэтому учитываем её, и между значком и полоской остаётся зазор в 1 px.
+                var b = path.GetBounds();
+                float area = size - h - 1 - pad;
+                float scale = Math.Min((size - pad - 1) / b.Width, area / b.Height);
+                using var m = new Matrix();
+                m.Translate(size / 2f, pad / 2 + area / 2f);
+                m.Scale(scale, scale);
+                m.Translate(-(b.X + b.Width / 2), -(b.Y + b.Height / 2));
+                path.Transform(m);
+
+                using var brush = new SolidBrush(fg);
+                using var pen = new Pen(fg, pad) { LineJoin = LineJoin.Round };
+                g.FillPath(brush, path);
+                g.DrawPath(pen, path);
             }
-            using (font)
-            using (var brush = new SolidBrush(color))
-                g.DrawString(text, font, brush, (size - sz.Width) / 2f, (size - sz.Height) / 2f, fmt);
+
+            // Полоска заряда во всю ширину внизу.
+            g.SmoothingMode = SmoothingMode.None;
+            int y = size - h;
+            using (var track = new SolidBrush(trackColor))
+                g.FillRectangle(track, 0, y, size, h);
+            if (d.Percent is { } p && p > 0)
+            {
+                int w = Math.Max(1, (int)Math.Round(size * p / 100.0));
+                using var fill = new SolidBrush(barColor);
+                g.FillRectangle(fill, 0, y, w, h);
+            }
         }
         return bmp.GetHicon();
     }

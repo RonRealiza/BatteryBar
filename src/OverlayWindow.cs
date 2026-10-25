@@ -22,7 +22,7 @@ internal sealed class OverlayWindow : Form
     private const char GlyphOther = '';
     private const char GlyphBolt = '';
 
-    private static readonly string IconFontName = PickFont("Segoe Fluent Icons", "Segoe MDL2 Assets");
+    internal static readonly string IconFontName = PickFont("Segoe Fluent Icons", "Segoe MDL2 Assets");
     private static readonly string TextFontName = PickFont("Segoe UI Variable Text", "Segoe UI");
 
     private bool _visibleOnScreen;
@@ -369,7 +369,7 @@ internal sealed class OverlayWindow : Form
         _visibleOnScreen = false;
     }
 
-    private static char Glyph(DeviceKind kind) => kind switch
+    internal static char Glyph(DeviceKind kind) => kind switch
     {
         DeviceKind.Mouse => GlyphMouse,
         DeviceKind.Keyboard => GlyphKeyboard,

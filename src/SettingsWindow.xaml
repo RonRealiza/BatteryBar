@@ -228,20 +228,31 @@
                     <Button Grid.Column="2" Content="{x:Static local:L.RefreshButton}" MinWidth="140" Click="Refresh_Click" />
                 </Grid>
             </Border>
-            <Border Style="{StaticResource Card}">
+            <!-- Обратная связь -->
+            <TextBlock Text="{x:Static local:L.FeedbackHeader}" Style="{StaticResource SectionHeader}" />
+            <Border Cursor="Hand" MouseLeftButtonUp="SuggestIdea_Click">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE8A5;" />
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xEA80;" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.LogTitle}" />
-                        <TextBlock Style="{StaticResource Secondary}"
-                                   Text="{x:Static local:L.LogHint}" />
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.IdeaTitle}" />
+                        <TextBlock Style="{StaticResource Secondary}" Text="{x:Static local:L.IdeaHint}" />
                     </StackPanel>
-                    <Button Grid.Column="2" Content="{x:Static local:L.LogButton}" MinWidth="140" Click="OpenLog_Click" />
+                    <TextBlock Grid.Column="2" FontFamily="{StaticResource IconFont}" Text="&#xE8A7;" FontSize="14"
+                               VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </Grid>
             </Border>
 

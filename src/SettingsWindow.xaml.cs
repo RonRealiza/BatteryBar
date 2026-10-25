@@ -23,7 +23,6 @@ internal interface ISettingsHost
     void ApplySettings();
 
     void RefreshNow();
-    void OpenLog();
 
     /// <summary>Язык сменился: применить его и переоткрыть окно настроек уже на новом языке.</summary>
     void LanguageChanged();
@@ -164,7 +163,15 @@ internal partial class SettingsWindow : Window
         window.Show();
     }
 
-    private void OpenLog_Click(object sender, RoutedEventArgs e) => _host.OpenLog();
+    /// <summary>Заявка «Предложение» на GitHub с уже указанной версией программы.</summary>
+    private void SuggestIdea_Click(object sender, RoutedEventArgs e)
+    {
+        string version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
+        string template = L.En ? "idea-en.yml" : "idea.yml";
+        string url = $"{DeviceReport.RepoUrl}/issues/new?template={template}&labels=enhancement" +
+                     $"&title={Uri.EscapeDataString(L.IdeaIssuePrefix + " ")}&version={Uri.EscapeDataString(version)}";
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+    }
 
     private static bool AppsUseLightTheme()
     {

@@ -71,9 +71,10 @@ public static class L
     public static string RefreshTitle => T("Обновить заряд", "Refresh battery");
     public static string RefreshHint => T("Опросить все устройства прямо сейчас, не дожидаясь очередного опроса", "Poll all devices right now instead of waiting for the next poll");
     public static string RefreshButton => T("Обновить сейчас", "Refresh now");
-    public static string LogTitle => T("Журнал", "Log");
-    public static string LogHint => T("Подробности о подключении устройств — пригодится, если что-то не определяется", "Device connection details — useful if something isn't detected");
-    public static string LogButton => T("Открыть журнал", "Open log");
+    public static string FeedbackHeader => T("Обратная связь", "Feedback");
+    public static string IdeaTitle => T("Предложить улучшение", "Suggest an improvement");
+    public static string IdeaHint => T("Идея или пожелание для BatteryBar — откроется заявка на GitHub", "An idea or wish for BatteryBar — opens an issue on GitHub");
+    public static string IdeaIssuePrefix => T("[Идея]", "[Idea]");
 
     // Окно отчёта
     public static string ReportWindowTitle => T("BatteryBar — устройство не определилось", "BatteryBar — device not detected");

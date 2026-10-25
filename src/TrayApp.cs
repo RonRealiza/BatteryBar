@@ -261,7 +261,6 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         }, null);
     }
 
-    void ISettingsHost.OpenLog() => OpenLog();
 
     private void UpdateTooltip()
     {
@@ -301,12 +300,6 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
             key.SetValue(RunValue, $"\"{Environment.ProcessPath}\"");
         else
             key.DeleteValue(RunValue, throwOnMissingValue: false);
-    }
-
-    private static void OpenLog()
-    {
-        Log.Write("log opened");
-        Process.Start(new ProcessStartInfo(Log.FilePath) { UseShellExecute = true });
     }
 
     protected override void ExitThreadCore()

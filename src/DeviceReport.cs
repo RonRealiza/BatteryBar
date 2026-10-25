@@ -105,7 +105,9 @@ internal static class DeviceReport
     public static string IssueUrl(string title, string model, string report)
     {
         static string E(string s) => Uri.EscapeDataString(s);
-        return $"{RepoUrl}/issues/new?template=new-device.yml&labels=device-request" +
+        // Формы заявок на GitHub одноязычные — открываем шаблон на языке интерфейса.
+        string template = L.En ? "new-device-en.yml" : "new-device.yml";
+        return $"{RepoUrl}/issues/new?template={template}&labels=device-request" +
                $"&title={E(title)}&model={E(model)}&report={E(report)}";
     }
 
