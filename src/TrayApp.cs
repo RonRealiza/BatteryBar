@@ -40,24 +40,24 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         if (System.Windows.Application.Current == null)
             _ = new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
 
-        var menu = new ContextMenuStrip();
-        var openItem = menu.Items.Add("Настройки", null, (_, _) => OpenSettings());
-        openItem.Font = new Font(openItem.Font, FontStyle.Bold);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Выход", null, (_, _) => ExitThread());
+        TrayMenu.EnableDarkMenus();
+        var menu = new TrayMenu();
+        menu.Add("Настройки", OpenSettings, isDefault: true);
+        menu.AddSeparator();
+        menu.Add("Выход", ExitThread);
 
         _tray = new NotifyIcon
         {
             Icon = CreateTrayIcon(),
             Text = "BatteryBar",
-            ContextMenuStrip = menu,
             Visible = true,
         };
+        _deviceTray = new DeviceTrayIcons(menu, OpenSettings);
         _tray.MouseClick += (_, e) =>
         {
             if (e.Button == MouseButtons.Left) OpenSettings();
+            else if (e.Button == MouseButtons.Right) menu.Show(_deviceTray.Handle);
         };
-        _deviceTray = new DeviceTrayIcons(menu, OpenSettings);
 
         _monitor = new BatteryMonitor(new IBatteryProvider[]
         {

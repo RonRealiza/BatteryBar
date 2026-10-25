@@ -20,7 +20,7 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
     private const int WM_LBUTTONUP = 0x0202;
     private const int WM_RBUTTONUP = 0x0205;
 
-    private readonly ContextMenuStrip _menu;
+    private readonly TrayMenu _menu;
     private readonly Action _onClick;
     private readonly uint _taskbarCreated;
     private readonly Dictionary<string, (uint Uid, IntPtr Icon, string Key)> _icons = new();
@@ -28,7 +28,7 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
 
     /// <param name="menu">Меню по правому клику.</param>
     /// <param name="onClick">Действие по левому клику (открыть настройки).</param>
-    public DeviceTrayIcons(ContextMenuStrip menu, Action onClick)
+    public DeviceTrayIcons(TrayMenu menu, Action onClick)
     {
         _menu = menu;
         _onClick = onClick;
@@ -160,8 +160,7 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
         }
         else if (m.Msg == CallbackMessage && (int)m.LParam == WM_RBUTTONUP)
         {
-            Native.SetForegroundWindow(Handle);
-            _menu.Show(Cursor.Position);
+            _menu.Show(Handle);
         }
         else if (m.Msg == CallbackMessage && (int)m.LParam == WM_LBUTTONUP)
         {
