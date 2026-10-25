@@ -1,88 +1,86 @@
 <p align="center">
-  <img src="assets/icon-preview.png" width="96" alt="BatteryBar icon">
+  <img src="assets/icon-preview.png" width="96" alt="Иконка BatteryBar">
 </p>
 
 <h1 align="center">BatteryBar</h1>
 
 <p align="center">
-  Battery levels of your wireless mouse, keyboard, headset and gamepads — right on the Windows 11 taskbar.
+  Заряд беспроводной мыши, клавиатуры, гарнитуры и геймпадов — прямо на панели задач Windows 11.
 </p>
 
 <p align="center">
-  <b>English</b> · <a href="README.ru.md">Русский</a>
+  <img src="docs/flags/ru.svg" height="14" alt=""> <b>Русский</b>
+  &nbsp;·&nbsp;
+  <a href="README.en.md"><img src="docs/flags/gb.svg" height="14" alt=""> English</a>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/taskbar.png" alt="BatteryBar on the taskbar: mouse 71%, headset 90%, keyboard 93%, DualSense 100%">
+  <img src="docs/screenshots/taskbar.png" alt="BatteryBar на панели задач: мышь 71%, гарнитура 90%, клавиатура 93%, DualSense 100%">
 </p>
 
-## Features
+## Возможности
 
-- **On the taskbar, next to the weather.** A compact block with an icon and percentage for every device. Works with the taskbar at the bottom or on the side, on one or all monitors.
-- **Or in the tray.** Each device can get its own tray icon with the charge level — or use both at once.
-- **Charging and low battery at a glance.** A green bolt while charging; the percentage turns red at 20% and below.
-- **Devices come and go automatically.** A device appears when it is turned on and disappears when it is turned off. A sleeping mouse keeps its last known level instead of blinking.
-- **Several gamepads.** Gamepads are labelled PS / PS4 / XB, with a number if you have two of the same kind.
-- **Windows 11 look.** Settings window and tray menu in the native Fluent style, light or dark — follows your Windows theme.
-- **English and Russian.** Picks your system language by default.
-- **Starts with Windows**, if you want it to.
+- **На панели задач, рядом с погодой.** Компактный блок со значком и процентом для каждого устройства. Работает с панелью снизу или сбоку, на одном или на всех мониторах.
+- **Или в трее.** У каждого устройства может быть своя иконка с зарядом — или и то, и другое сразу.
+- **Зарядка и низкий заряд видны сразу.** Зелёная молния во время зарядки, процент становится красным при 20% и ниже.
+- **Устройства появляются и исчезают сами.** Устройство показывается, когда его включают, и пропадает, когда выключают. Уснувшая мышь не мигает, а показывает последний известный заряд.
+- **Несколько геймпадов.** У геймпадов подписи PS / PS4 / XB, а у двух одинаковых — ещё и номер.
+- **В стиле Windows 11.** Окно настроек и меню трея в родном стиле Fluent, светлые или тёмные — как тема Windows.
+- **Русский и английский.** По умолчанию — язык системы.
+- **Запуск вместе с Windows**, если нужно.
 
-## Screenshots
+## Окно настроек
 
-| Tray icons | Tray menu |
+<p align="center">
+  <img src="docs/screenshots/settings-ru.png" width="460" alt="Окно настроек">
+</p>
+
+## Поддерживаемые устройства
+
+| Устройства | Статус |
 |---|---|
-| <img src="docs/screenshots/tray.png" width="320" alt="Tray icons with battery percentages"> | <img src="docs/screenshots/menu-en.png" alt="Tray menu: Settings, Refresh battery, Exit"> |
+| Мыши и клавиатуры Logitech (ресиверы Lightspeed, Unifying, Bolt и провод) | ✅ проверено на PRO X Superlight 2 |
+| HyperX Cloud III Wireless | ✅ проверено |
+| Геймпады Xbox (адаптер, Bluetooth, USB) | ✅ проверено |
+| DualSense / DualSense Edge (USB, Bluetooth) | ✅ проверено |
+| AirPods и Beats | ✅ проверено на AirPods Pro 2 |
+| Клавиатура Zornher ZH870 | ✅ проверено |
+| DualShock 4 | 🧪 должно работать |
+| Беспроводные мыши, клавиатуры и гарнитуры Razer | 🧪 должно работать |
+| SteelSeries Arctis Nova 7 / 7P / 7X, Nova 5, Nova Pro Wireless, Arctis 7 / 7+ / 1 / 9 / Pro | 🧪 должно работать |
+| HyperX Cloud Alpha Wireless, Cloud II Wireless, Cloud Flight | 🧪 должно работать |
+| Гарнитуры Corsair Void и родственные | 🧪 должно работать |
+| Гарнитуры Logitech G (G535, G733, PRO X и другие) | 🧪 должно работать |
+| Любые Bluetooth-устройства, заряд которых Windows показывает в Параметрах | 🧪 должно работать |
+
+🧪 — сделано по открытым описаниям протоколов, но на настоящем устройстве ещё не подтверждено. Если у вас работает (или не работает) — сообщите, пожалуйста.
+
+### Устройство не определилось?
+
+Откройте **Настройки → «Устройство не определилось?»**, выберите устройство и нажмите **«Отправить на GitHub»**. В браузере откроется заполненная заявка — весь отчёт виден до отправки. В нём только технические идентификаторы устройств: без серийных номеров и личных имён.
 
 <p align="center">
-  <img src="docs/screenshots/settings-en.png" width="460" alt="Settings window">
+  <img src="docs/screenshots/report-ru.png" width="460" alt="Окно «Устройство не определилось?»">
 </p>
 
-## Supported devices
+## Установка
 
-| Devices | Status |
-|---|---|
-| Logitech mice and keyboards (Lightspeed, Unifying, Bolt receivers and cable) | ✅ tested with PRO X Superlight 2 |
-| HyperX Cloud III Wireless | ✅ tested |
-| Xbox controllers (adapter, Bluetooth, USB) | ✅ tested |
-| DualSense / DualSense Edge (USB, Bluetooth) | ✅ tested |
-| AirPods and Beats | ✅ tested with AirPods Pro 2 |
-| Zornher ZH870 keyboard | ✅ tested |
-| DualShock 4 | 🧪 should work |
-| Razer wireless mice, keyboards and headsets | 🧪 should work |
-| SteelSeries Arctis Nova 7 / 7P / 7X, Nova 5, Nova Pro Wireless, Arctis 7 / 7+ / 1 / 9 / Pro | 🧪 should work |
-| HyperX Cloud Alpha Wireless, Cloud II Wireless, Cloud Flight | 🧪 should work |
-| Corsair Void and related headsets | 🧪 should work |
-| Logitech G headsets (G535, G733, PRO X and others) | 🧪 should work |
-| Any Bluetooth device whose battery Windows shows in Settings | 🧪 should work |
+1. Скачайте последнюю версию из [Releases](../../releases/latest) и распакуйте в любую папку, например `%LOCALAPPDATA%\Programs\BatteryBar`.
+2. Установите [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0), если его ещё нет (Windows сама предложит это при первом запуске).
+3. Запустите `BatteryBar.exe`. Клик по его иконке в трее открывает настройки; там же включается **«Запускать вместе с Windows»**.
 
-🧪 — implemented from public protocol descriptions but not yet confirmed on real hardware. If it works (or doesn't) for you, please let us know.
+**Требования:** Windows 11. На Windows 10 должны работать иконки в трее, а блок на панели задач пока не поддерживается.
 
-### Your device isn't detected?
+### Иконки в трее спрятаны?
 
-Open **Settings → Device not detected?**, pick the device and press **Send to GitHub**. A pre-filled issue opens in your browser — you see the whole report before sending. It contains only technical device IDs: no serial numbers and no personal names.
+Windows 11 прячет новые иконки под стрелку ^. Чтобы они были видны всегда, откройте **Параметры Windows → Персонализация → Панель задач → Другие значки в трее** и включите нужные — или просто перетащите иконку из-под стрелки на панель.
 
-<p align="center">
-  <img src="docs/screenshots/report-en.png" width="460" alt="Device not detected window">
-</p>
+## Приватность
 
-## Installation
+BatteryBar работает только на вашем компьютере: без аккаунтов, телеметрии и доступа в интернет. Он лишь читает заряд устройств и отправляет им только запросы чтения заряда — и только тем, которые точно опознал. В интернет программа обращается, только когда вы сами нажимаете **«Отправить на GitHub»**.
 
-1. Download the latest version from [Releases](../../releases/latest) and unpack it to any folder, for example `%LOCALAPPDATA%\Programs\BatteryBar`.
-2. Install the [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) if you don't have it yet (Windows will offer it on first launch).
-3. Run `BatteryBar.exe`. Click its tray icon to open the settings; turn on **Start with Windows** there.
+## Для разработчиков
 
-**Requirements:** Windows 11. On Windows 10 the tray icons should work, but the taskbar block is not supported yet.
+Сборка из исходников, устройство проекта и как добавить поддержку нового устройства: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-### Tray icons are hidden?
-
-Windows 11 hides new tray icons under the ^ arrow. To keep them visible, open **Windows Settings → Personalization → Taskbar → Other system tray icons** and turn on the ones you need, or simply drag an icon from under the arrow onto the taskbar.
-
-## Privacy
-
-BatteryBar works entirely on your computer: no accounts, no telemetry, no internet access. It only reads battery information from your devices and sends them nothing but read-only battery queries — and only to devices it recognises exactly. The only time it opens the internet is when you press **Send to GitHub** yourself.
-
-## For developers
-
-Building from source, project structure and how to add support for a new device: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
-
-Device protocols are based on the public descriptions from [HeadsetControl](https://github.com/Sapd/HeadsetControl), [HyperHeadset](https://github.com/LennardKittner/HyperHeadset), [OpenRazer](https://github.com/openrazer/openrazer), [OpenPods](https://github.com/adolfintel/OpenPods) and [Solaar](https://github.com/pwr-Solaar/Solaar); the code is written from scratch.
+Протоколы устройств основаны на открытых описаниях из [HeadsetControl](https://github.com/Sapd/HeadsetControl), [HyperHeadset](https://github.com/LennardKittner/HyperHeadset), [OpenRazer](https://github.com/openrazer/openrazer), [OpenPods](https://github.com/adolfintel/OpenPods) и [Solaar](https://github.com/pwr-Solaar/Solaar); код написан с нуля.

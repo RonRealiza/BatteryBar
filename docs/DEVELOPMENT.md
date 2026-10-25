@@ -1,6 +1,6 @@
 # Разработка BatteryBar
 
-[← README](../README.ru.md)
+[← README](../README.md)
 
 ## Сборка и запуск
 
