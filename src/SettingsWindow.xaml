@@ -82,9 +82,40 @@
                 <TextBlock Style="{StaticResource Secondary}" FontSize="13"
                            Text="Подключённых устройств не найдено. Включите мышь, клавиатуру, гарнитуру или геймпад — они появятся здесь в течение нескольких секунд." />
             </Border>
-            <TextBlock Margin="2,8,0,0" FontSize="13">
-                <Hyperlink Click="ReportDevice_Click">Устройство не определилось?</Hyperlink>
-            </TextBlock>
+            <!-- Карточка-кнопка с мягким красноватым оттенком: выделяется, но не кричит. -->
+            <Border Cursor="Hand" MouseLeftButtonUp="ReportDevice_Click">
+                <Border.Resources>
+                    <SolidColorBrush x:Key="ReportTint" Color="#E8505B" Opacity="0.10" />
+                    <SolidColorBrush x:Key="ReportTintHover" Color="#E8505B" Opacity="0.18" />
+                    <SolidColorBrush x:Key="ReportStroke" Color="#E8505B" Opacity="0.30" />
+                </Border.Resources>
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                        <Setter Property="Background" Value="{DynamicResource ReportTint}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource ReportStroke}" />
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ReportTintHover}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE9CE;" Foreground="#E8707A" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Устройство не определилось?" />
+                        <TextBlock Style="{StaticResource Secondary}"
+                                   Text="Отправьте отчёт об устройстве — по нему можно будет добавить поддержку" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" FontFamily="{StaticResource IconFont}" Text="&#xE76C;" FontSize="12"
+                               VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </Grid>
+            </Border>
 
             <!-- Отображение -->
             <TextBlock Text="Отображение" Style="{StaticResource SectionHeader}" />

@@ -4,7 +4,7 @@
         x:ClassModifier="internal"
         Title="BatteryBar — устройство не определилось"
         Icon="pack://application:,,,/assets/BatteryBar.ico"
-        Width="720" Height="780" MinWidth="520" MinHeight="560"
+        Width="640" SizeToContent="Height" ResizeMode="CanMinimize"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <Style x:Key="Secondary" TargetType="TextBlock">
@@ -15,58 +15,46 @@
         <Style x:Key="Label" TargetType="TextBlock">
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,18,0,6" />
+            <Setter Property="Margin" Value="0,20,0,6" />
         </Style>
     </Window.Resources>
 
-    <Grid Margin="32,24,32,24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="2*" MinHeight="120" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="3*" MinHeight="140" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <StackPanel Margin="32,24,32,28">
+        <TextBlock Text="Устройство не определилось?" FontSize="24" FontWeight="SemiBold" />
+        <TextBlock Style="{StaticResource Secondary}" Margin="0,6,0,0" FontSize="13"
+                   Text="Выберите устройство — по отчёту о нём можно будет добавить поддержку. Перед отправкой виден весь текст." />
 
-        <StackPanel Grid.Row="0">
-            <TextBlock Text="Устройство не определилось?" FontSize="24" FontWeight="SemiBold" />
-            <TextBlock Style="{StaticResource Secondary}" Margin="0,6,0,0" FontSize="13"
-                       Text="Выберите устройство и отправьте отчёт — по нему можно будет добавить поддержку. Ничего не отправляется без вашего ведома: перед отправкой виден весь текст." />
-        </StackPanel>
+        <TextBlock Style="{StaticResource Label}" Text="Устройство" />
+        <ComboBox x:Name="DeviceCombo" HorizontalAlignment="Stretch" IsEnabled="False"
+                  SelectionChanged="DeviceCombo_SelectionChanged" />
+        <TextBlock x:Name="ComboHint" Style="{StaticResource Secondary}" Margin="2,4,0,0" Text="Ищем подключённые устройства…" />
 
-        <TextBlock Grid.Row="1" Style="{StaticResource Label}" Text="1. Какое это устройство" />
-        <Grid Grid.Row="2">
-            <ListBox x:Name="DevicesList" SelectionChanged="Input_Changed" />
-            <TextBlock x:Name="LoadingText" Text="Ищем подключённые устройства…" Style="{StaticResource Secondary}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Grid>
-
-        <TextBlock Grid.Row="3" Style="{StaticResource Label}" Text="2. Модель и подробности" />
-        <StackPanel Grid.Row="4">
+        <!-- Остальное появляется после выбора устройства. -->
+        <StackPanel x:Name="DetailsPanel" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource Label}" Text="Модель" />
             <TextBox x:Name="ModelBox" TextChanged="Input_Changed" />
-            <TextBlock Style="{StaticResource Secondary}" Margin="2,4,0,8" Text="Модель, например «Razer Viper V2 Pro» или «Attack Shark X3»" />
+            <TextBlock Style="{StaticResource Secondary}" Margin="2,4,0,0" Text="Например, «Razer Viper V2 Pro» или «Attack Shark X3»" />
+
+            <TextBlock Style="{StaticResource Label}" Text="Подробности" />
             <TextBox x:Name="CommentBox" TextChanged="Input_Changed" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" />
             <TextBlock Style="{StaticResource Secondary}" Margin="2,4,0,0"
                        Text="Как подключено (ресивер, Bluetooth, провод), показывает ли заряд фирменная программа производителя" />
+
+            <TextBlock Style="{StaticResource Label}" Text="Что будет отправлено" />
+            <TextBox x:Name="PreviewBox" Height="200" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas" FontSize="11.5"
+                     TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+
+            <Grid Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText" Style="{StaticResource Secondary}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <Button Grid.Column="1" Content="Скопировать отчёт" MinWidth="150" Margin="0,0,8,0" Click="Copy_Click" />
+                <Button x:Name="SendButton" Grid.Column="2" Content="Отправить на GitHub" MinWidth="170" Click="Send_Click"
+                        Style="{DynamicResource AccentButtonStyle}" />
+            </Grid>
         </StackPanel>
-
-        <TextBlock Grid.Row="5" Style="{StaticResource Label}" Text="3. Что будет отправлено" />
-        <TextBox x:Name="PreviewBox" Grid.Row="6" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas" FontSize="11.5"
-                 TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
-
-        <Grid Grid.Row="7" Margin="0,16,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="StatusText" Style="{StaticResource Secondary}" VerticalAlignment="Center" Margin="0,0,12,0" />
-            <Button Grid.Column="1" Content="Скопировать отчёт" MinWidth="150" Margin="0,0,8,0" Click="Copy_Click" />
-            <Button x:Name="SendButton" Grid.Column="2" Content="Отправить на GitHub" MinWidth="170" Click="Send_Click"
-                    Style="{DynamicResource AccentButtonStyle}" />
-        </Grid>
-    </Grid>
+    </StackPanel>
 </Window>

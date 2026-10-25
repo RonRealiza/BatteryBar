@@ -7,14 +7,16 @@ using System.Windows.Controls;
 
 namespace BatteryBar;
 
-/// <summary>Окно «Устройство не определилось?»: выбор устройства, комментарий, предпросмотр и отправка отчёта.</summary>
+/// <summary>
+/// Окно «Устройство не определилось?»: сначала только выбор устройства, после выбора —
+/// модель, подробности, предпросмотр отчёта и отправка.
+/// </summary>
 internal partial class ReportWindow : Window
 {
     // Ссылки длиннее браузеры и GitHub обрезают — тогда отчёт идёт через буфер обмена.
     private const int MaxUrlLength = 7500;
 
     private readonly Func<IReadOnlyList<DeviceBattery>> _shown;
-    private bool _ready;
 
     public ReportWindow(Func<IReadOnlyList<DeviceBattery>> shown)
     {
@@ -26,30 +28,34 @@ internal partial class ReportWindow : Window
     private async Task LoadAsync()
     {
         // Перечисление устройств и Bluetooth занимает до секунды — не держим окно.
-        var candidates = await Task.Run(DeviceReport.Candidates);
-        DevicesList.ItemsSource = candidates;
-        LoadingText.Visibility = Visibility.Collapsed;
-        _ready = true;
+        DeviceCombo.ItemsSource = await Task.Run(DeviceReport.Candidates);
+        DeviceCombo.IsEnabled = true;
+        ComboHint.Text = "Выберите устройство из списка подключённых";
+        DeviceCombo.IsDropDownOpen = true;
+    }
+
+    private async void DeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DeviceCombo.SelectedItem is not ReportCandidate c) return;
+        ComboHint.Visibility = Visibility.Collapsed;
+        DetailsPanel.Visibility = Visibility.Visible;
+        ModelBox.Text = c.Title.Split("  (")[0];
         await UpdatePreviewAsync();
     }
 
     private async void Input_Changed(object sender, RoutedEventArgs e)
     {
-        if (!_ready) return;
-        if (sender == DevicesList && DevicesList.SelectedItem is ReportCandidate c && ModelBox.Text.Trim().Length == 0)
-            ModelBox.Text = c.Title.Split("  (")[0];
-        await UpdatePreviewAsync();
+        if (DetailsPanel.Visibility == Visibility.Visible)
+            await UpdatePreviewAsync();
     }
 
     private async Task UpdatePreviewAsync()
     {
-        var selected = DevicesList.SelectedItem as ReportCandidate;
+        var selected = DeviceCombo.SelectedItem as ReportCandidate;
         string comment = CommentBox.Text;
         var shown = _shown();
-        string report = await Task.Run(() => DeviceReport.Build(selected, comment, shown));
-        PreviewBox.Text = report;
+        PreviewBox.Text = await Task.Run(() => DeviceReport.Build(selected, comment, shown));
         SendButton.IsEnabled = selected != null && ModelBox.Text.Trim().Length > 0;
-        StatusText.Text = selected == null ? "Выберите устройство из списка" : "";
     }
 
     private void Copy_Click(object sender, RoutedEventArgs e)
