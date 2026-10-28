@@ -56,7 +56,7 @@ internal sealed class BatteryMonitor : IDisposable
     {
         LoadState();
         if (_lastSeen.Count > 0)
-            Updated?.Invoke(_lastSeen.Values.Select(v => v.Device).ToList());
+            Updated?.Invoke(InDisplayOrder(_lastSeen.Values.Select(v => v.Device)));
 
         while (!_stopped)
         {
@@ -116,7 +116,13 @@ internal sealed class BatteryMonitor : IDisposable
                     Forget(id);
                 }
             }
-            var shown = Deduplicate(_lastSeen.Values.Select(v => v.Device).ToList());
+            // Мышь подключили кабелем — ресивер её больше не слышит, но запомненное значение осталось.
+            // Пока то же устройство отвечает по другому каналу, старую запись не показываем.
+            var current = _lastSeen.Values.Select(v => v.Device)
+                .Where(d => !IsSticky(d.Id) || fresh.Contains(d.Id) || !_lastSeen.Values.Any(o =>
+                    o.Device.Id != d.Id && fresh.Contains(o.Device.Id) && o.Device.Kind == d.Kind && o.Device.Name == d.Name))
+                .ToList();
+            var shown = InDisplayOrder(Deduplicate(current));
 
             string summary = string.Join(", ", shown.Select(d => $"{d.Name}={d.Percent?.ToString() ?? "?"}%/{d.State}"));
             if (summary != _lastSummary)
@@ -139,14 +145,38 @@ internal sealed class BatteryMonitor : IDisposable
     {
         bool IsFallback(DeviceBattery d) => _owner.TryGetValue(d.Id, out var p) && p.IsFallback;
         // Номер у однотипных устройств («DualSense 2») при сравнении не учитываем.
-        var specific = devices.Where(d => !IsFallback(d))
-            .Select(d => System.Text.RegularExpressions.Regex.Replace(d.Name, @"\s+\d+$", ""))
-            .ToList();
-        return devices.Where(d => !IsFallback(d) || !specific.Any(name =>
-                d.Name.Contains(name, StringComparison.OrdinalIgnoreCase) ||
-                name.Contains(d.Name, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
+        static string BaseName(string name) => System.Text.RegularExpressions.Regex.Replace(name, @"\s+\d+$", "");
+        static bool Same(string a, string b) =>
+            a.Contains(b, StringComparison.OrdinalIgnoreCase) || b.Contains(a, StringComparison.OrdinalIgnoreCase);
+
+        var fallbacks = devices.Where(IsFallback).ToList();
+        var result = new List<DeviceBattery>();
+        foreach (var d in devices.Where(d => !IsFallback(d)))
+        {
+            // Геймпад Xbox по Bluetooth: Windows.Gaming.Input отдаёт неверную ёмкость («100 из 1000» при полном
+            // заряде), а Bluetooth-свойство Windows — верный процент, как в «Параметрах». Берём процент оттуда,
+            // а статус зарядки оставляем от модуля Xbox (Bluetooth его не знает).
+            if (d.Id.StartsWith("xbox:", StringComparison.Ordinal)
+                && fallbacks.FirstOrDefault(f => Same(f.Name, BaseName(d.Name))) is { Percent: { } btPercent })
+                result.Add(d with { Percent = btPercent });
+            else
+                result.Add(d);
+        }
+        var specific = result.Select(d => BaseName(d.Name)).ToList();
+        result.AddRange(fallbacks.Where(f => !specific.Any(name => Same(f.Name, name))));
+        return result;
     }
+
+    /// <summary>Порядок показа: клавиатуры, мыши, гарнитуры, затем геймпады и остальное; внутри типа — как раньше.</summary>
+    private static List<DeviceBattery> InDisplayOrder(IEnumerable<DeviceBattery> devices) =>
+        devices.OrderBy(d => d.Kind switch
+        {
+            DeviceKind.Keyboard => 0,
+            DeviceKind.Mouse => 1,
+            DeviceKind.Headset => 2,
+            DeviceKind.Gamepad => 3,
+            _ => 4,
+        }).ToList();
 
     private void Forget(string id)
     {
@@ -168,7 +198,9 @@ internal sealed class BatteryMonitor : IDisposable
             {
                 // Старые записи Logitech без «|» в Id — от прежней версии, где Id строился по имени.
                 bool legacy = e.Device.Id.StartsWith("logi:", StringComparison.Ordinal) && !e.Device.Id.Contains('|');
-                if (IsSticky(e.Device.Id) && !legacy && now - e.Seen <= StickyStaleAfter)
+                // Аксессуары Razer без батареи (подсветка) прошлые версии ошибочно запоминали.
+                if (IsSticky(e.Device.Id) && !legacy && !Providers.RazerProvider.IsAccessoryId(e.Device.Id)
+                    && now - e.Seen <= StickyStaleAfter)
                     _lastSeen[e.Device.Id] = (e.Device, e.Seen);
             }
             Log.Write($"restored {_lastSeen.Count} device(s) from last run");

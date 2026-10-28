@@ -17,6 +17,13 @@ internal static class Program
             return;
         }
 
+        if (args.Length >= 2 && args[0] == "--icons-preview")
+        {
+            // Для проверки дизайна: все значки устройств в нескольких размерах в PNG.
+            DeviceIcons.SavePreview(args[1]);
+            return;
+        }
+
         using var mutex = new Mutex(true, @"Local\BatteryBar.SingleInstance", out bool first);
         if (!first)
         {

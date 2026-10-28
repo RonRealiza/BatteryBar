@@ -21,13 +21,16 @@ internal sealed class RazerProvider : IBatteryProvider
     private static readonly byte[] TransactionIds = { 0x1F, 0x3F, 0xFF };
     private readonly Dictionary<string, byte> _transaction = new();
 
+    // Почему устройство не ответило на запрос заряда — пишем в журнал, только когда причина меняется.
+    private readonly Dictionary<string, string> _lastFailure = new();
+
     public string Name => "razer";
 
     public IEnumerable<DeviceBattery> Poll()
     {
         var result = new List<DeviceBattery>();
         var answered = new HashSet<string>(); // у устройства бывает несколько подходящих коллекций
-        foreach (var dev in DeviceList.Local.GetHidDevices(VendorId).Where(HasControlReport))
+        foreach (var dev in DeviceList.Local.GetHidDevices(VendorId).Where(d => !IsAccessory(d.ProductID) && HasControlReport(d)))
         {
             string product;
             try { product = dev.GetProductName(); }
@@ -59,6 +62,20 @@ internal sealed class RazerProvider : IBatteryProvider
         return result;
     }
 
+    /// <summary>
+    /// Коды 0x0Fxx у Razer — аксессуары без батареи (контроллер ARGB-подсветки, коврики, подставки, Chroma-доки).
+    /// Некоторые из них «успешно» отвечают на запрос заряда нулём.
+    /// </summary>
+    private static bool IsAccessory(int productId) => (productId & 0xFF00) == 0x0F00;
+
+    /// <summary>То же по Id устройства («razer:» + путь с pid_xxxx) — для записей, сохранённых прошлыми версиями.</summary>
+    public static bool IsAccessoryId(string id)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(id, @"pid_([0-9a-f]{4})", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return id.StartsWith("razer:", StringComparison.Ordinal) && m.Success
+               && IsAccessory(Convert.ToInt32(m.Groups[1].Value, 16));
+    }
+
     /// <summary>Служебная коллекция Razer: feature-отчёт ровно на 90 байт (+ номер отчёта).</summary>
     private static bool HasControlReport(HidDevice d)
     {
@@ -70,6 +87,7 @@ internal sealed class RazerProvider : IBatteryProvider
     private byte[]? Query(HidStream stream, string path, byte commandId)
     {
         IEnumerable<byte> ids = _transaction.TryGetValue(path, out var known) ? new[] { known } : TransactionIds;
+        var failures = new List<string>();
         foreach (byte tid in ids)
         {
             var tx = new byte[ReportLength + 1];
@@ -83,7 +101,8 @@ internal sealed class RazerProvider : IBatteryProvider
             tx[89] = crc;
             stream.SetFeature(tx);
 
-            for (int attempt = 0; attempt < 6; attempt++)
+            string outcome = "busy";
+            for (int attempt = 0; attempt < 10; attempt++)
             {
                 Thread.Sleep(attempt == 0 ? 20 : 50);
                 var rx = new byte[ReportLength + 1];
@@ -93,9 +112,24 @@ internal sealed class RazerProvider : IBatteryProvider
                 if (status == StatusOk && rx[7] == 0x07 && rx[8] == commandId)
                 {
                     _transaction[path] = tid;
+                    _lastFailure.Remove(path);
                     return rx;
                 }
-                break; // ошибка, нет связи с устройством или не тот transaction id
+                // ошибка, нет связи с устройством или не тот transaction id
+                outcome = $"status {status:X2} tid {rx[2]:X2} cmd {rx[7]:X2}/{rx[8]:X2}";
+                break;
+            }
+            failures.Add($"tid {tid:X2}: {outcome}");
+        }
+
+        if (commandId == 0x80)
+        {
+            string summary = string.Join("; ", failures);
+            if (!_lastFailure.TryGetValue(path, out var last) || last != summary)
+            {
+                _lastFailure[path] = summary;
+                var m = System.Text.RegularExpressions.Regex.Match(path, @"pid_[0-9a-f]{4}(&mi_[0-9a-f]{2})?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                Log.Write($"razer {m.Value}: no battery answer — {summary}");
             }
         }
         return null;

@@ -259,14 +259,7 @@ internal partial class SettingsWindow : Window
     {
         public DeviceRow(DeviceBattery d, bool light, FrameworkElement owner)
         {
-            Glyph = d.Kind switch
-            {
-                DeviceKind.Mouse => "",
-                DeviceKind.Keyboard => "",
-                DeviceKind.Gamepad => "",
-                DeviceKind.Headset => "",
-                _ => "",
-            };
+            Icon = DeviceIcons.Geometry(d);
             Name = d.Badge is { Length: > 0 } b ? $"{d.Name} ({b})" : d.Name;
             PercentText = d.Percent is { } p ? $"{p}%" : "—";
             Status = d.State switch
@@ -287,7 +280,8 @@ internal partial class SettingsWindow : Window
             ChargeVisibility = d.State == ChargeState.Charging ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        public string Glyph { get; }
+        public Geometry Icon { get; }
+        public Geometry Bolt { get; } = DeviceIcons.BoltGeometry();
         public string Name { get; }
         public string Status { get; }
         public string PercentText { get; }

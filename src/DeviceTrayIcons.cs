@@ -131,31 +131,11 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
 
-            // Значок устройства — над полоской. Значки Segoe Fluent контурные с линией ~1 px, в 16 px их почти не видно,
-            // поэтому рисуем значок как контур и обводим его линией потолще.
+            // Заполненный значок устройства — в квадрате над полоской, с зазором в 1 px.
             int h = Math.Max(2, (int)Math.Round(size * 0.16) - 1); // 2 px при 16, 3 px при 24
-            float pad = Math.Max(0.9f, size * 0.06f);               // толщина обводки значка
-            using (var family = new FontFamily(OverlayWindow.IconFontName))
-            using (var path = new GraphicsPath())
-            {
-                path.AddString(OverlayWindow.Glyph(d.Kind).ToString(), family, (int)FontStyle.Regular, size * 0.86f,
-                    PointF.Empty, StringFormat.GenericTypographic);
-                // Вписываем значок по центру области над полоской. Обводка выходит за контур на половину толщины,
-                // поэтому учитываем её, и между значком и полоской остаётся зазор в 1 px.
-                var b = path.GetBounds();
-                float area = size - h - 1 - pad;
-                float scale = Math.Min((size - pad - 1) / b.Width, area / b.Height);
-                using var m = new Matrix();
-                m.Translate(size / 2f, pad / 2 + area / 2f);
-                m.Scale(scale, scale);
-                m.Translate(-(b.X + b.Width / 2), -(b.Y + b.Height / 2));
-                path.Transform(m);
-
-                using var brush = new SolidBrush(fg);
-                using var pen = new Pen(fg, pad) { LineJoin = LineJoin.Round };
-                g.FillPath(brush, path);
-                g.DrawPath(pen, path);
-            }
+            float box = size - h - 1;
+            using (var brush = new SolidBrush(fg))
+                DeviceIcons.Draw(g, d, (size - box) / 2f, 0, box, brush);
 
             // Полоска заряда во всю ширину внизу.
             g.SmoothingMode = SmoothingMode.None;

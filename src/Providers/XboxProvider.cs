@@ -37,7 +37,12 @@ internal sealed class XboxProvider : IBatteryProvider
                 _ => ChargeState.Unknown,
             };
 
-            string name = RawGameController.FromGameController(pad)?.DisplayName is { Length: > 0 } dn ? dn : "Xbox";
+            // По Bluetooth Windows называет геймпад «HID-compliant game controller» — даём понятное имя.
+            // По нему же BatteryMonitor склеит геймпад с записью Bluetooth-модуля.
+            var raw = RawGameController.FromGameController(pad);
+            string name = raw?.DisplayName is { Length: > 0 } dn && dn.Contains("Xbox", StringComparison.OrdinalIgnoreCase)
+                ? dn
+                : "Xbox Wireless Controller";
             found.Add((name, percent, state));
         }
 

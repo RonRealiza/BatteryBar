@@ -20,10 +20,9 @@ internal sealed class OverlayWindow : Form
     private const char GlyphGamepad = '';
     private const char GlyphHeadset = '';
     private const char GlyphOther = '';
-    private const char GlyphBolt = '';
 
     internal static readonly string IconFontName = PickFont("Segoe Fluent Icons", "Segoe MDL2 Assets");
-    private static readonly string TextFontName = PickFont("Segoe UI Variable Text", "Segoe UI");
+    private static readonly string TextFontName = PickFont("Segoe UI Variable Text Semibold", "Segoe UI Semibold", "Segoe UI");
 
     private bool _visibleOnScreen;
     private IntPtr _parent;
@@ -70,10 +69,10 @@ internal sealed class OverlayWindow : Form
 
         float s = layout.Dpi / 96f;
         // На вертикальной панели ширина всего ~48 px — текст чуть мельче, чтобы «100%» поместилось.
-        using var iconFont = new Font(IconFontName, 15 * s, GraphicsUnit.Pixel);
-        using var boltFont = new Font(IconFontName, (layout.Vertical ? 8.5f : 10) * s, GraphicsUnit.Pixel);
-        using var textFont = new Font(TextFontName, (layout.Vertical ? 11 : 12.5f) * s, GraphicsUnit.Pixel);
-        using var badgeFont = new Font(TextFontName, (layout.Vertical ? 8.5f : 9.5f) * s, FontStyle.Bold, GraphicsUnit.Pixel);
+        float iconSize = (layout.Vertical ? 19 : 20) * s;
+        float boltH = (layout.Vertical ? 11 : 13) * s;
+        using var textFont = new Font(TextFontName, (layout.Vertical ? 12 : 14) * s, GraphicsUnit.Pixel);
+        using var badgeFont = new Font(TextFontName, (layout.Vertical ? 9 : 10.5f) * s, FontStyle.Bold, GraphicsUnit.Pixel);
         var fmt = StringFormat.GenericTypographic;
 
         var measured = new List<Item>();
@@ -88,15 +87,15 @@ internal sealed class OverlayWindow : Form
                 measured.Add(new Item(
                     d,
                     text,
-                    Width(Glyph(d.Kind).ToString(), iconFont),
+                    iconSize,
                     d.Badge is { Length: > 0 } badge ? Width(badge, badgeFont) + 2 * s : 0,
                     Width(text, textFont),
-                    d.State == ChargeState.Charging ? Width(GlyphBolt.ToString(), boltFont) + 1 * s : 0));
+                    d.State == ChargeState.Charging ? boltH * DeviceIcons.BoltAspect + 2 * s : 0));
             }
         }
 
         var colors = new Palette(layout.LightTheme);
-        var fonts = new Fonts(iconFont, boltFont, textFont, badgeFont, fmt);
+        var fonts = new Fonts(iconSize, boltH, textFont, badgeFont, fmt);
         if (layout.Vertical)
             RenderVertical(measured, layout, s, colors, fonts);
         else
@@ -108,7 +107,7 @@ internal sealed class OverlayWindow : Form
         public bool IsLow => Dev.Percent is <= 20 && Dev.State != ChargeState.Charging;
     }
 
-    private sealed record Fonts(Font Icon, Font Bolt, Font Text, Font Badge, StringFormat Format);
+    private sealed record Fonts(float IconSize, float BoltH, Font Text, Font Badge, StringFormat Format);
 
     private sealed record Palette(bool Light)
     {
@@ -144,7 +143,7 @@ internal sealed class OverlayWindow : Form
         }
 
         // Не влезают все — показываем сколько поместится и метку «+N» с числом оставшихся.
-        float gap = 14 * s;
+        float gap = 20 * s;
         var (count, usedLen) = Fit(gap, avail);
         int hidden = 0;
         string more = "";
@@ -175,7 +174,7 @@ internal sealed class OverlayWindow : Form
             foreach (var (it, w) in items)
             {
                 using var brush = new SolidBrush(it.IsLow ? c.Low : c.Fg);
-                DrawCentered(g, Glyph(it.Dev.Kind).ToString(), f.Icon, brush, x, height, f.Format);
+                DeviceIcons.Draw(g, it.Dev, x, (height - f.IconSize) / 2f, f.IconSize, brush);
                 float cx = x + it.IconW;
                 if (it.BadgeW > 0)
                 {
@@ -188,7 +187,7 @@ internal sealed class OverlayWindow : Form
                 if (it.BoltW > 0)
                 {
                     using var boltBrush = new SolidBrush(c.Charge);
-                    DrawCentered(g, GlyphBolt.ToString(), f.Bolt, boltBrush, cx + it.TextW + 1 * s, height, f.Format);
+                    DeviceIcons.DrawBolt(g, cx + it.TextW + 2 * s, (height - f.BoltH) / 2f, f.BoltH, boltBrush);
                 }
                 x += w + gap;
             }
@@ -209,7 +208,7 @@ internal sealed class OverlayWindow : Form
     {
         int width = layout.Taskbar.Width;
         int slot = layout.SlotEnd - layout.SlotStart;
-        float iconRow = 18 * s, textRow = 15 * s, pad = 2 * s, moreRow = 14 * s;
+        float iconRow = 22 * s, textRow = 17 * s, pad = 2 * s, moreRow = 15 * s;
         float itemH = iconRow + textRow;
         float avail = slot - 2 * pad;
 
@@ -229,7 +228,7 @@ internal sealed class OverlayWindow : Form
         }
 
         // Не влезают все — показываем сколько поместится и метку «+N» с числом оставшихся.
-        float gap = 10 * s;
+        float gap = 14 * s;
         var (count, usedLen) = Fit(gap, avail);
         int hidden = 0;
         if (count < measured.Count)
@@ -256,7 +255,7 @@ internal sealed class OverlayWindow : Form
                 // Строка 1: значок (+ подпись PS/XB), по центру панели.
                 float row1 = it.IconW + it.BadgeW;
                 float x1 = (width - row1) / 2f;
-                DrawInRow(g, Glyph(it.Dev.Kind).ToString(), f.Icon, brush, x1, y, iconRow, f.Format);
+                DeviceIcons.Draw(g, it.Dev, x1, y + (iconRow - f.IconSize) / 2f, f.IconSize, brush);
                 if (it.BadgeW > 0)
                 {
                     using var badgeBrush = new SolidBrush(Color.FromArgb(190, it.IsLow ? c.Low : c.Fg));
@@ -270,7 +269,7 @@ internal sealed class OverlayWindow : Form
                 if (it.BoltW > 0)
                 {
                     using var boltBrush = new SolidBrush(c.Charge);
-                    DrawInRow(g, GlyphBolt.ToString(), f.Bolt, boltBrush, x2 + it.TextW + 1 * s, y + iconRow, textRow, f.Format);
+                    DeviceIcons.DrawBolt(g, x2 + it.TextW + 2 * s, y + iconRow + (textRow - f.BoltH) / 2f, f.BoltH, boltBrush);
                 }
                 y += itemH + gap;
             }

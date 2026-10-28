@@ -12,13 +12,18 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RootNamespace>BatteryBar</RootNamespace>
     <AssemblyName>BatteryBar</AssemblyName>
-    <Version>0.1.3</Version>
+    <Version>0.1.4</Version>
     <ApplicationIcon>assets\BatteryBar.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Иконка окна настроек и трея; перерисовать — tools\make-icon.ps1. -->
     <Resource Include="assets\BatteryBar.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Силуэты геймпадов (SVG из редактора); разбирает DeviceIcons. -->
+    <EmbeddedResource Include="assets\icons\*.svg" LogicalName="icons.%(Filename).svg" />
   </ItemGroup>
 
   <ItemGroup>

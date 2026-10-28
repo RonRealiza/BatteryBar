@@ -45,8 +45,8 @@ public static class L
     public static string DevicesHeader => T("Устройства", "Devices");
     public static string NoDevices => T("Подключённых устройств не найдено. Включите мышь, клавиатуру, гарнитуру или геймпад — они появятся здесь в течение нескольких секунд.",
         "No connected devices found. Turn on your mouse, keyboard, headset or gamepad — they will show up here within a few seconds.");
-    public static string NotDetectedTitle => T("Устройство не определилось?", "Device not detected?");
-    public static string NotDetectedHint => T("Отправьте отчёт об устройстве — по нему можно будет добавить поддержку", "Send a device report so support for it can be added");
+    public static string NotDetectedTitle => T("Устройство не определилось или работает неправильно?", "Device not detected or not working correctly?");
+    public static string NotDetectedHint => T("Отправьте отчёт об устройстве — по нему можно будет добавить поддержку или исправить ошибку", "Send a device report so support can be added or the problem fixed");
     public static string DisplayHeader => T("Отображение", "Display");
     public static string WhereTitle => T("Где показывать заряд", "Where to show battery");
     public static string WhereHint => T("Блок на панели задач рядом с погодой или отдельные иконки в трее", "A block on the taskbar next to the weather, or separate tray icons");
@@ -96,7 +96,7 @@ public static class L
     public static string IdeaIssuePrefix => T("[Идея]", "[Idea]");
 
     // Окно отчёта
-    public static string ReportWindowTitle => T("BatteryBar — устройство не определилось", "BatteryBar — device not detected");
+    public static string ReportWindowTitle => T("BatteryBar — отчёт об устройстве", "BatteryBar — device report");
     public static string ReportIntro => T("Выберите устройство — по отчёту о нём можно будет добавить поддержку. Перед отправкой виден весь текст.",
         "Pick the device — its report helps add support for it. You will see the full text before sending.");
     public static string ReportDevice => T("Устройство", "Device");

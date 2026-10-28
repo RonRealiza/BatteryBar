@@ -21,7 +21,7 @@
     </Window.Resources>
 
     <StackPanel Margin="32,24,32,28">
-        <TextBlock Text="{x:Static local:L.NotDetectedTitle}" FontSize="24" FontWeight="SemiBold" />
+        <TextBlock Text="{x:Static local:L.NotDetectedTitle}" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock Style="{StaticResource Secondary}" Margin="0,6,0,0" FontSize="13"
                    Text="{x:Static local:L.ReportIntro}" />
 
