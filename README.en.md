@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/taskbar.png" alt="BatteryBar on the taskbar: mouse 71%, headset 90%, keyboard 93%, DualSense 100%">
+  <img src="docs/screenshots/taskbar.png" alt="BatteryBar on the taskbar: keyboard 69%, mouse 98% (charging), headset 86%, DualSense 85%, Xbox controller 96%">
 </p>
 
 ## Features
@@ -35,7 +35,7 @@
 Instead of the taskbar block (or together with it), every device can get its own tray icon: the device glyph and a battery bar. The bar is green while charging and red when low; the exact percentage is in the tooltip.
 
 <p align="center">
-  <img src="docs/screenshots/tray.png" width="408" alt="Tray icons: headset, gamepad, keyboard and mouse with battery bars">
+  <img src="docs/screenshots/tray.png" width="516" alt="Tray icons: keyboard, mouse, headset, PS and Xbox controllers with battery bars">
 </p>
 
 ## Settings window
@@ -64,12 +64,12 @@ Instead of the taskbar block (or together with it), every device can get its own
 
 🧪 — implemented from public protocol descriptions but not yet confirmed on real hardware. If it works (or doesn't) for you, please let us know.
 
-### Your device isn't detected?
+### Your device isn't detected or doesn't work correctly?
 
-Open **Settings → Device not detected?**, pick the device and press **Send to GitHub**. A pre-filled issue opens in your browser — you see the whole report before sending. It contains only technical device IDs: no serial numbers and no personal names.
+Open **Settings → Device not detected or not working correctly?**, pick the device and press **Send to GitHub**. A pre-filled issue opens in your browser — you see the whole report before sending. It contains only technical device IDs: no serial numbers and no personal names.
 
 <p align="center">
-  <img src="docs/screenshots/report-en.png" width="460" alt="Device not detected window">
+  <img src="docs/screenshots/report-en.png" width="460" alt="Device not detected or not working correctly window">
 </p>
 
 ## Installation
