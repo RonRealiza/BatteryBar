@@ -53,6 +53,8 @@ public static class L
     public static string WhereTaskbar => T("На панели задач", "On the taskbar");
     public static string WhereTray => T("В трее", "In the tray");
     public static string WhereBoth => T("На панели задач и в трее", "Taskbar and tray");
+    public static string HideIconTitle => T("Скрыть значок BatteryBar в трее", "Hide the BatteryBar tray icon");
+    public static string HideIconHint => T("Настройки откроются, если запустить BatteryBar ещё раз — из меню «Пуск» или файлом программы", "Settings open when you launch BatteryBar again — from the Start menu or the program file");
     public static string MonitorsTitle => T("Мониторы", "Monitors");
     public static string MonitorsHint => T("На панелях задач каких мониторов показывать блок", "Which monitors' taskbars show the block");
     public static string MonitorsPrimary => T("Только главный", "Primary only");
@@ -97,11 +99,11 @@ public static class L
 
     // Окно отчёта
     public static string ReportWindowTitle => T("BatteryBar — отчёт об устройстве", "BatteryBar — device report");
-    public static string ReportIntro => T("Выберите устройство — по отчёту о нём можно будет добавить поддержку. Перед отправкой виден весь текст.",
-        "Pick the device — its report helps add support for it. You will see the full text before sending.");
+    public static string ReportIntro => T("Отметьте устройство — по отчёту о нём можно будет добавить поддержку. Если мышь работает через ресивер или док, отметьте и его. Перед отправкой виден весь текст.",
+        "Check the device — its report helps add support for it. If a mouse works through a receiver or dock, check that too. You will see the full text before sending.");
     public static string ReportDevice => T("Устройство", "Device");
     public static string ReportSearching => T("Ищем подключённые устройства…", "Looking for connected devices…");
-    public static string ReportPick => T("Выберите устройство из списка подключённых", "Pick a device from the connected ones");
+    public static string ReportPick => T("Отметьте одно или несколько устройств из списка подключённых", "Check one or more of the connected devices");
     public static string ReportModel => T("Модель", "Model");
     public static string ReportModelHint => T("Например, «Razer Viper V2 Pro» или «Attack Shark X3»", "For example, “Razer Viper V2 Pro” or “Attack Shark X3”");
     public static string ReportDetails => T("Подробности", "Details");

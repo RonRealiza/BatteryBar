@@ -44,7 +44,7 @@
         </Style>
     </Window.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" local:SmoothScroll.IsEnabled="True">
         <StackPanel Margin="36,28,36,36">
             <TextBlock Text="BatteryBar" FontSize="28" FontWeight="SemiBold" />
             <TextBlock Style="{StaticResource Secondary}" Margin="0,4,0,0" FontSize="13"
@@ -143,6 +143,24 @@
                         <ComboBoxItem Content="{x:Static local:L.WhereTray}" />
                         <ComboBoxItem Content="{x:Static local:L.WhereBoth}" />
                     </ComboBox>
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xED1A;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.HideIconTitle}" />
+                        <TextBlock Style="{StaticResource Secondary}" TextWrapping="Wrap"
+                                   Text="{x:Static local:L.HideIconHint}" />
+                    </StackPanel>
+                    <CheckBox x:Name="HideIconCheck" Grid.Column="2" VerticalAlignment="Center"
+                              Checked="HideIconCheck_Changed" Unchecked="HideIconCheck_Changed" />
                 </Grid>
             </Border>
 

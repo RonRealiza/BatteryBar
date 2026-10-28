@@ -56,7 +56,7 @@ internal sealed class BatteryMonitor : IDisposable
     {
         LoadState();
         if (_lastSeen.Count > 0)
-            Updated?.Invoke(InDisplayOrder(_lastSeen.Values.Select(v => v.Device)));
+            Updated?.Invoke(InDisplayOrder(WithoutStaleCopies(new HashSet<string>())));
 
         while (!_stopped)
         {
@@ -116,13 +116,7 @@ internal sealed class BatteryMonitor : IDisposable
                     Forget(id);
                 }
             }
-            // Мышь подключили кабелем — ресивер её больше не слышит, но запомненное значение осталось.
-            // Пока то же устройство отвечает по другому каналу, старую запись не показываем.
-            var current = _lastSeen.Values.Select(v => v.Device)
-                .Where(d => !IsSticky(d.Id) || fresh.Contains(d.Id) || !_lastSeen.Values.Any(o =>
-                    o.Device.Id != d.Id && fresh.Contains(o.Device.Id) && o.Device.Kind == d.Kind && o.Device.Name == d.Name))
-                .ToList();
-            var shown = InDisplayOrder(Deduplicate(current));
+            var shown = InDisplayOrder(Deduplicate(WithoutStaleCopies(fresh)));
 
             string summary = string.Join(", ", shown.Select(d => $"{d.Name}={d.Percent?.ToString() ?? "?"}%/{d.State}"));
             if (summary != _lastSummary)
@@ -136,6 +130,19 @@ internal sealed class BatteryMonitor : IDisposable
             _wake.WaitOne(Tick);
         }
     }
+
+    /// <summary>
+    /// Мышь подключили кабелем — ресивер её больше не слышит, но запомненное значение осталось.
+    /// Из запомненных записей того же устройства показываем одну: ту, что отвечает сейчас, а если не отвечает
+    /// ни одна (сразу после запуска) — последнюю по времени.
+    /// </summary>
+    private List<DeviceBattery> WithoutStaleCopies(HashSet<string> fresh) =>
+        _lastSeen.Values
+            .Where(v => !IsSticky(v.Device.Id) || fresh.Contains(v.Device.Id) || !_lastSeen.Values.Any(o =>
+                o.Device.Id != v.Device.Id && o.Device.Kind == v.Device.Kind && o.Device.Name == v.Device.Name
+                && (fresh.Contains(o.Device.Id) || o.Seen > v.Seen)))
+            .Select(v => v.Device)
+            .ToList();
 
     /// <summary>
     /// Устройство из общего модуля (Bluetooth через Windows) прячем, если его уже показывает специализированный:

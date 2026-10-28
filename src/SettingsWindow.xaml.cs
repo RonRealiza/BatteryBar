@@ -53,6 +53,7 @@ internal partial class SettingsWindow : Window
         LanguageCombo.SelectedIndex = (int)host.Settings.Language;
         AutostartCheck.IsChecked = host.Autostart;
         AutoUpdateCheck.IsChecked = host.Settings.AutoCheckUpdates;
+        HideIconCheck.IsChecked = host.Settings.HideAppIcon;
         if (host.IsDebugBuild)
             AutostartHint.Text = L.AutostartDebugHint;
         LoadMonitors();
@@ -212,6 +213,13 @@ internal partial class SettingsWindow : Window
         if (_loading) return;
         _host.Settings.SelectedMonitors = MonitorChecks.Children.OfType<CheckBox>()
             .Where(c => c.IsChecked == true).Select(c => (string)c.Tag).ToList();
+        _host.ApplySettings();
+    }
+
+    private void HideIconCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _host.Settings.HideAppIcon = HideIconCheck.IsChecked == true;
         _host.ApplySettings();
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using HidSharp;
+using Microsoft.Win32.SafeHandles;
 
 namespace BatteryBar.Providers;
 
@@ -39,20 +40,23 @@ internal sealed class RazerProvider : IBatteryProvider
 
             try
             {
-                if (!dev.TryOpen(out var stream)) continue;
-                using (stream)
+                // Служебный отчёт у мышей Razer — в коллекции самой мыши (mi_00), её открываем без прав доступа.
+                using var handle = Native.CreateFile(dev.DevicePath, 0, Native.FILE_SHARE_READ_WRITE, IntPtr.Zero, Native.OPEN_EXISTING, 0, IntPtr.Zero);
+                if (handle.IsInvalid)
                 {
-                    if (Query(stream, dev.DevicePath, 0x80) is not { } level) continue;
-                    // Значение — во втором байте аргументов (arguments[1]): со сдвигом на номер отчёта это [10].
-                    bool charging = Query(stream, dev.DevicePath, 0x84) is { } ch && ch[10] == 0x01;
-                    answered.Add(product);
-
-                    string name = product.Replace(" Dongle", "", StringComparison.OrdinalIgnoreCase)
-                                         .Replace(" Receiver", "", StringComparison.OrdinalIgnoreCase).Trim();
-                    int percent = (int)Math.Round(level[10] * 100 / 255.0);
-                    result.Add(new DeviceBattery($"razer:{dev.DevicePath}", name, KindOf(name), percent,
-                        charging ? ChargeState.Charging : ChargeState.Discharging));
+                    LogFailure(dev.DevicePath, $"cannot open (error {System.Runtime.InteropServices.Marshal.GetLastWin32Error()})");
+                    continue;
                 }
+                if (Query(handle, dev.DevicePath, 0x80) is not { } level) continue;
+                // Значение — во втором байте аргументов (arguments[1]): со сдвигом на номер отчёта это [10].
+                bool charging = Query(handle, dev.DevicePath, 0x84) is { } ch && ch[10] == 0x01;
+                answered.Add(product);
+
+                string name = product.Replace(" Dongle", "", StringComparison.OrdinalIgnoreCase)
+                                     .Replace(" Receiver", "", StringComparison.OrdinalIgnoreCase).Trim();
+                int percent = (int)Math.Round(level[10] * 100 / 255.0);
+                result.Add(new DeviceBattery($"razer:{dev.DevicePath}", name, KindOf(name), percent,
+                    charging ? ChargeState.Charging : ChargeState.Discharging));
             }
             catch (Exception ex)
             {
@@ -84,7 +88,7 @@ internal sealed class RazerProvider : IBatteryProvider
     }
 
     /// <summary>Команда класса 0x07 (питание). Возвращает отчёт ответа (с номером отчёта в [0]) или null.</summary>
-    private byte[]? Query(HidStream stream, string path, byte commandId)
+    private byte[]? Query(SafeFileHandle handle, string path, byte commandId)
     {
         IEnumerable<byte> ids = _transaction.TryGetValue(path, out var known) ? new[] { known } : TransactionIds;
         var failures = new List<string>();
@@ -99,14 +103,22 @@ internal sealed class RazerProvider : IBatteryProvider
             byte crc = 0;
             for (int i = 3; i < 89; i++) crc ^= tx[i]; // XOR байтов 2..87 отчёта
             tx[89] = crc;
-            stream.SetFeature(tx);
+            if (!Native.HidD_SetFeature(handle, tx, tx.Length))
+            {
+                failures.Add($"tid {tid:X2}: send error {System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
+                continue;
+            }
 
             string outcome = "busy";
             for (int attempt = 0; attempt < 10; attempt++)
             {
                 Thread.Sleep(attempt == 0 ? 20 : 50);
                 var rx = new byte[ReportLength + 1];
-                stream.GetFeature(rx);
+                if (!Native.HidD_GetFeature(handle, rx, rx.Length))
+                {
+                    outcome = $"read error {System.Runtime.InteropServices.Marshal.GetLastWin32Error()}";
+                    break;
+                }
                 byte status = rx[1];
                 if (status == StatusBusy) continue; // беспроводной ресивер ещё ждёт ответа от устройства
                 if (status == StatusOk && rx[7] == 0x07 && rx[8] == commandId)
@@ -123,16 +135,16 @@ internal sealed class RazerProvider : IBatteryProvider
         }
 
         if (commandId == 0x80)
-        {
-            string summary = string.Join("; ", failures);
-            if (!_lastFailure.TryGetValue(path, out var last) || last != summary)
-            {
-                _lastFailure[path] = summary;
-                var m = System.Text.RegularExpressions.Regex.Match(path, @"pid_[0-9a-f]{4}(&mi_[0-9a-f]{2})?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                Log.Write($"razer {m.Value}: no battery answer — {summary}");
-            }
-        }
+            LogFailure(path, $"no battery answer — {string.Join("; ", failures)}");
         return null;
+    }
+
+    private void LogFailure(string path, string reason)
+    {
+        if (_lastFailure.TryGetValue(path, out var last) && last == reason) return;
+        _lastFailure[path] = reason;
+        var m = System.Text.RegularExpressions.Regex.Match(path, @"pid_[0-9a-f]{4}(&mi_[0-9a-f]{2})?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        Log.Write($"razer {m.Value}: {reason}");
     }
 
     private static DeviceKind KindOf(string name)

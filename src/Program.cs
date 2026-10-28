@@ -7,6 +7,9 @@ namespace BatteryBar;
 
 internal static class Program
 {
+    /// <summary>Повторный запуск программы: уже работающая копия по этому сигналу открывает настройки.</summary>
+    public const string ShowSettingsEvent = @"Local\BatteryBar.ShowSettings";
+
     [STAThread]
     private static void Main(string[] args)
     {
@@ -28,7 +31,12 @@ internal static class Program
         if (!first)
         {
             // Сразу после обновления старая копия может ещё закрываться — ждём её, а не выходим.
-            if (!args.Contains("--updated") || !WaitForPreviousInstance(mutex)) return;
+            if (!args.Contains("--updated"))
+            {
+                SignalRunningInstance();
+                return;
+            }
+            if (!WaitForPreviousInstance(mutex)) return;
         }
 
         // Портативная версия после обновления оставляет старый exe рядом — удаляем его.
@@ -52,6 +60,25 @@ internal static class Program
         if (args.Contains("--menu"))
             app.ShowMenuOnStart();
         Application.Run(app);
+    }
+
+    /// <summary>
+    /// Программа уже запущена — просим её показать настройки. Это единственный путь к ним,
+    /// когда значок в трее скрыт, а заряд показывается только на панели задач.
+    /// </summary>
+    private static void SignalRunningInstance()
+    {
+        try
+        {
+            // Окно откроет другой процесс — разрешаем ему выйти на передний план вместо нас.
+            Native.AllowSetForegroundWindow(Native.ASFW_ANY);
+            using var signal = EventWaitHandle.OpenExisting(ShowSettingsEvent);
+            signal.Set();
+        }
+        catch (WaitHandleCannotBeOpenedException)
+        {
+            // старая версия без сигнала или копия ещё запускается
+        }
     }
 
     private static bool WaitForPreviousInstance(Mutex mutex)

@@ -43,7 +43,12 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         using (var probe = new Control()) _ = probe.Handle;
         _ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
         _updater = new Updater(_ui);
-        _updater.Changed += () => _tray!.Icon = _updater.Available != null ? _iconWithDot : _icon;
+        // Обработчики, поставленные в очередь до выхода (например, «Установка…» перед обновлением),
+        // могут сработать после ExitThreadCore — значок трея к тому времени уже освобождён.
+        _updater.Changed += () =>
+        {
+            if (!_stopped) _tray!.Icon = _updater.Available != null ? _iconWithDot : _icon;
+        };
 
         // Окно настроек и меню трея — WPF с темой Fluent (стиль Windows 11, светлая/тёмная по системе).
         // Объект Application нужен для ресурсов темы; цикл сообщений остаётся у WinForms.
@@ -70,7 +75,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         {
             Icon = _icon,
             Text = "BatteryBar",
-            Visible = true,
+            Visible = !_settings.HideAppIcon,
         };
         _deviceTray = new DeviceTrayIcons(menu, OpenSettings);
         _tray.MouseClick += (_, e) =>
@@ -94,6 +99,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         });
         _monitor.Updated += devices => _ui.Post(_ =>
         {
+            if (_stopped) return;
             _devices = devices;
             UpdateTooltip();
             Redraw();
@@ -121,6 +127,14 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         _layoutThread = new Thread(LayoutLoop) { IsBackground = true, Name = "TaskbarLayout" };
         _layoutThread.SetApartmentState(ApartmentState.MTA);
         _layoutThread.Start();
+
+        // Повторный запуск BatteryBar открывает настройки этой копии (см. Program.SignalRunningInstance).
+        var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, Program.ShowSettingsEvent);
+        new Thread(() =>
+        {
+            while (showSettings.WaitOne() && !_stopped)
+                _ui.Post(_ => { if (!_stopped) OpenSettings(); }, null);
+        }) { IsBackground = true, Name = "ShowSettings" }.Start();
 
         _monitor.Start();
         Log.Write("started");
@@ -254,7 +268,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     void ISettingsHost.ApplySettings()
     {
         _settings.Save();
-        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)}");
+        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)} hideIcon={_settings.HideAppIcon}");
+        _tray.Visible = !_settings.HideAppIcon;
         Redraw();
     }
 

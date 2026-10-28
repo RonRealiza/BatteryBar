@@ -26,8 +26,13 @@
                    Text="{x:Static local:L.ReportIntro}" />
 
         <TextBlock Style="{StaticResource Label}" Text="{x:Static local:L.ReportDevice}" />
-        <ComboBox x:Name="DeviceCombo" HorizontalAlignment="Stretch" IsEnabled="False"
-                  SelectionChanged="DeviceCombo_SelectionChanged" />
+        <!-- Список с флажками: можно отметить сразу несколько устройств (например, мышь и её ресивер). -->
+        <Border BorderThickness="1" CornerRadius="4" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                Background="{DynamicResource ControlFillColorDefaultBrush}">
+            <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto" local:SmoothScroll.IsEnabled="True">
+                <StackPanel x:Name="DeviceChecks" Margin="12,6" />
+            </ScrollViewer>
+        </Border>
         <TextBlock x:Name="ComboHint" Style="{StaticResource Secondary}" Margin="2,4,0,0" Text="{x:Static local:L.ReportSearching}" />
 
         <!-- Остальное появляется после выбора устройства. -->

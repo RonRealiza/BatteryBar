@@ -23,6 +23,9 @@ internal sealed class Settings
 
     public DisplayMode Display { get; set; } = DisplayMode.Taskbar;
 
+    /// <summary>Скрыть значок самой программы в трее (настройки тогда открываются повторным запуском BatteryBar).</summary>
+    public bool HideAppIcon { get; set; }
+
     [JsonIgnore] public bool ShowOnTaskbar => Display != DisplayMode.Tray;
 
     [JsonIgnore] public bool ShowInTray => Display != DisplayMode.Taskbar;

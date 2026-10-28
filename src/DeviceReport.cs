@@ -44,34 +44,29 @@ internal static class DeviceReport
         return list.OrderBy(c => c.BluetoothName != null).ThenBy(c => c.Title, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
-    public static string Build(ReportCandidate? selected, string comment, IReadOnlyList<DeviceBattery> shown)
+    public static string Build(IReadOnlyList<ReportCandidate> selected, string comment, IReadOnlyList<DeviceBattery> shown)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"BatteryBar {Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)}, {WindowsVersion()}");
         sb.AppendLine();
 
-        if (selected == null)
-        {
+        if (selected.Count == 0)
             sb.AppendLine("No device selected.");
-        }
-        else if (selected.VendorId is { } vid && selected.ProductId is { } pid)
+        foreach (var device in selected)
         {
-            sb.AppendLine($"Device: {selected.Title}");
-            foreach (var d in DeviceList.Local.GetHidDevices(vid, pid))
-                sb.AppendLine($"  {Interface(d.DevicePath)}  usage={Usage(d)}  in={Len(d.GetMaxInputReportLength)} out={Len(d.GetMaxOutputReportLength)} feature={Len(d.GetMaxFeatureReportLength)}  '{Safe(d.GetProductName)}' / '{Safe(d.GetManufacturer)}'");
-        }
-        else
-        {
-            sb.AppendLine($"Device: {selected.Title}");
+            sb.AppendLine($"Device: {device.Title}");
+            if (device.VendorId is { } vid && device.ProductId is { } pid)
+                foreach (var d in DeviceList.Local.GetHidDevices(vid, pid))
+                    sb.AppendLine($"  {Interface(d.DevicePath)}  usage={Usage(d)}  in={Len(d.GetMaxInputReportLength)} out={Len(d.GetMaxOutputReportLength)} feature={Len(d.GetMaxFeatureReportLength)}  '{Safe(d.GetProductName)}' / '{Safe(d.GetManufacturer)}'");
+            sb.AppendLine();
         }
 
         if (comment.Trim().Length > 0)
         {
-            sb.AppendLine();
             sb.AppendLine("Comment: " + comment.Trim());
+            sb.AppendLine();
         }
 
-        sb.AppendLine();
         sb.AppendLine("BatteryBar shows: " + (shown.Count == 0 ? "nothing" : string.Join(", ",
             shown.Select(d => $"{StripOwner(d.Name)} {d.Percent?.ToString() ?? "?"}%"))));
 
@@ -79,7 +74,7 @@ internal static class DeviceReport
         sb.AppendLine("Other HID devices:");
         foreach (var group in DeviceList.Local.GetHidDevices().GroupBy(d => (d.VendorID, d.ProductID)).OrderBy(g => g.Key))
         {
-            if (selected?.VendorId == group.Key.VendorID && selected.ProductId == group.Key.ProductID) continue;
+            if (selected.Any(c => c.VendorId == group.Key.VendorID && c.ProductId == group.Key.ProductID)) continue;
             string name = group.Select(d => Safe(d.GetProductName)).FirstOrDefault(n => n.Length > 0) ?? "";
             sb.AppendLine($"  {group.Key.VendorID:X4}:{group.Key.ProductID:X4}  {name}  [{string.Join(" ", group.Select(d => Interface(d.DevicePath)).Distinct())}]");
         }

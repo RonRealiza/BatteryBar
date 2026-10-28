@@ -12,7 +12,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RootNamespace>BatteryBar</RootNamespace>
     <AssemblyName>BatteryBar</AssemblyName>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
     <ApplicationIcon>assets\BatteryBar.ico</ApplicationIcon>
   </PropertyGroup>
 

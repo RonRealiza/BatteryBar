@@ -137,4 +137,23 @@ internal static class Native
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     public static extern bool Shell_NotifyIcon(uint message, ref NOTIFYICONDATA data);
+
+    public const int ASFW_ANY = -1;
+
+    [DllImport("user32.dll")] public static extern bool AllowSetForegroundWindow(int processId);
+
+    // HID-коллекции мыши и клавиатуры Windows держит за собой: открыть их на чтение и запись нельзя,
+    // но дескриптор без прав доступа даётся, и через него работают feature-отчёты.
+    public const uint FILE_SHARE_READ_WRITE = 0x3;
+    public const uint OPEN_EXISTING = 3;
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(string fileName, uint access, uint share,
+        IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [DllImport("hid.dll", SetLastError = true)]
+    public static extern bool HidD_SetFeature(Microsoft.Win32.SafeHandles.SafeFileHandle device, byte[] buffer, int length);
+
+    [DllImport("hid.dll", SetLastError = true)]
+    public static extern bool HidD_GetFeature(Microsoft.Win32.SafeHandles.SafeFileHandle device, byte[] buffer, int length);
 }

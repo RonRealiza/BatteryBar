@@ -66,7 +66,7 @@ Instead of the taskbar block (or together with it), every device can get its own
 
 ### Your device isn't detected or doesn't work correctly?
 
-Open **Settings → Device not detected or not working correctly?**, pick the device and press **Send to GitHub**. A pre-filled issue opens in your browser — you see the whole report before sending. It contains only technical device IDs: no serial numbers and no personal names.
+Open **Settings → Device not detected or not working correctly?**, check the device (several are fine — for example, a mouse and its receiver or dock) and press **Send to GitHub**. A pre-filled issue opens in your browser — you see the whole report before sending. It contains only technical device IDs: no serial numbers and no personal names.
 
 <p align="center">
   <img src="docs/screenshots/report-en.png" width="460" alt="Device not detected or not working correctly window">
@@ -81,7 +81,7 @@ Download the latest version from [Releases](../../releases/latest) — pick one:
 
 Both need the [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) (free, from Microsoft). If it is missing, the installer offers to open the download page, and the portable version asks for it on first launch.
 
-Click the BatteryBar tray icon to open the settings.
+Click the BatteryBar tray icon to open the settings. You can hide the icon — then launching BatteryBar again (for example, from the Start menu) opens the settings.
 
 **Requirements:** Windows 11. On Windows 10 the tray icons should work, but the taskbar block is not supported yet.
 
