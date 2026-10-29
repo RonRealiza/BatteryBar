@@ -71,6 +71,8 @@ public static class L
     public static string PositionTitle => T("Место на панели задач", "Position on the taskbar");
     public static string PositionHint => T("Если в выбранном месте не хватит места, блок встанет в другое", "If there is no room in the chosen place, the block moves to another");
     public static string PositionAfterWidgets => T("Справа от погоды", "Right of the weather");
+    public static string OffsetFromWidgets => T("Отступ от погоды", "Space after the weather");
+    public static string OffsetFromTray => T("Отступ от трея", "Space before the tray");
     public static string PositionCenterLeft => T("По центру слева (между погодой и «Пуском»)", "Centered on the left (between weather and Start)");
     public static string PositionCenterRight => T("По центру справа (между приложениями и треем)", "Centered on the right (between apps and tray)");
     public static string PositionBeforeStart => T("Слева от «Пуска»", "Left of Start");

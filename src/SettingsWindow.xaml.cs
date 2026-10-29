@@ -29,6 +29,9 @@ internal interface ISettingsHost
 
     void RefreshNow();
 
+    /// <summary>Перерисовать по текущим настройкам, не сохраняя их (пока тянут ползунок).</summary>
+    void Preview();
+
     /// <summary>Пользователь перетащил устройства: новый порядок их Id.</summary>
     void SetDeviceOrder(IReadOnlyList<string> ids);
 
@@ -63,6 +66,7 @@ internal partial class SettingsWindow : Window
         DisplayCombo.SelectedIndex = (int)host.Settings.Display;
         SeparatorCombo.SelectedIndex = (int)host.Settings.Separator;
         PositionCombo.SelectedIndex = (int)host.Settings.Position;
+        UpdateOffsetRow();
         LanguageCombo.SelectedIndex = (int)host.Settings.Language;
         AutostartCheck.IsChecked = host.Autostart;
         AutoUpdateCheck.IsChecked = host.Settings.AutoCheckUpdates;
@@ -78,6 +82,11 @@ internal partial class SettingsWindow : Window
         UpdateUpdateCard();
 
         host.DevicesChanged += UpdateDevices;
+        _saveOffset.Tick += (_, _) =>
+        {
+            _saveOffset.Stop();
+            _host.ApplySettings();
+        };
         _refreshAfterDrag.Tick += (_, _) =>
         {
             _refreshAfterDrag.Stop();
@@ -437,6 +446,38 @@ internal partial class SettingsWindow : Window
         if (_loading || PositionCombo.SelectedIndex < 0) return;
         _host.Settings.Position = (TaskbarPosition)PositionCombo.SelectedIndex;
         _host.ApplySettings();
+        UpdateOffsetRow();
+    }
+
+    /// <summary>Ползунок отступа: от погоды или от трея, у остальных мест его нет.</summary>
+    private void UpdateOffsetRow()
+    {
+        var position = _host.Settings.Position;
+        bool shown = position is TaskbarPosition.AfterWidgets or TaskbarPosition.BeforeTray;
+        OffsetRow.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+        if (!shown) return;
+        OffsetLabel.Text = position == TaskbarPosition.AfterWidgets ? L.OffsetFromWidgets : L.OffsetFromTray;
+        bool loading = _loading;
+        _loading = true;
+        OffsetSlider.Value = _host.Settings.EdgeOffset;
+        _loading = loading;
+        OffsetValue.Text = $"{_host.Settings.EdgeOffset} px";
+    }
+
+    // Пока ползунок тянут — только перерисовка; сохраняем, когда его оставили в покое.
+    private readonly System.Windows.Threading.DispatcherTimer _saveOffset = new() { Interval = TimeSpan.FromMilliseconds(500) };
+
+    private void OffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (OffsetValue == null) return; // ещё строится окно
+        int value = (int)Math.Round(e.NewValue);
+        OffsetValue.Text = $"{value} px";
+        if (_loading) return;
+        if (_host.Settings.Position == TaskbarPosition.AfterWidgets) _host.Settings.OffsetFromWidgets = value;
+        else if (_host.Settings.Position == TaskbarPosition.BeforeTray) _host.Settings.OffsetFromTray = value;
+        _host.Preview();
+        _saveOffset.Stop();
+        _saveOffset.Start();
     }
 
     private void SeparatorCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

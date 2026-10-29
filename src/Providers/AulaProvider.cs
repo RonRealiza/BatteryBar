@@ -21,7 +21,8 @@ internal sealed class AulaProvider : IBatteryProvider
     private const byte CmdBattery = 0x4A;
     private const byte StateBattery = 0x01, StateCable = 0x10;
 
-    // С кабелем клавиатура вместо заряда шлёт 100 — показываем последний заряд от батареи.
+    // Утилиты для F75/F87 считают, что с кабелем уровень всегда 100. У AU75 он настоящий и растёт по мере зарядки
+    // (96, 97…), поэтому берём его; последний заряд от батареи — только если с кабелем пришло что-то странное.
     private int? _lastLevel;
     private string? _lastRaw;
 
@@ -54,7 +55,9 @@ internal sealed class AulaProvider : IBatteryProvider
                     int level = r[5];
                     if (r[6] == StateCable)
                     {
-                        result.Add(new DeviceBattery("aula:keyboard", "AULA", DeviceKind.Keyboard, _lastLevel, ChargeState.Charging));
+                        int? shown = level is >= 1 and <= 100 ? level : _lastLevel;
+                        result.Add(new DeviceBattery("aula:keyboard", "AULA", DeviceKind.Keyboard, shown,
+                            shown >= 100 ? ChargeState.Full : ChargeState.Charging));
                     }
                     else if (r[6] == StateBattery && level is >= 1 and <= 100)
                     {

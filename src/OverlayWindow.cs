@@ -351,12 +351,16 @@ internal sealed class OverlayWindow : Form
         using var under = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
         using (var g = NewCanvas(under))
         {
-            // Линии — посередине расчётных отступов: пока значок тянут, они отмечают, куда он встанет.
+            // Линии — посередине между соседями. Обычно по их текущим позициям, чтобы ехать вместе со значками;
+            // пока значок тянут — по расчётным, чтобы отмечать, куда он встанет.
             if (sc.Separator == SeparatorStyle.Line)
                 for (int i = 1; i < _slots.Count; i++)
                 {
                     var prev = _slots[i - 1];
-                    DrawSeparator(g, (prev.Target + prev.Length * prev.Size + _slots[i].Target) / 2, across, prev, _slots[i], sc);
+                    var next = _slots[i];
+                    float prevAt = _drag == null ? prev.Pos ?? prev.Target : prev.Target;
+                    float nextAt = _drag == null ? next.Pos ?? next.Target : next.Target;
+                    DrawSeparator(g, (prevAt + prev.Length * prev.Size + nextAt) / 2, across, prev, next, sc);
                 }
             foreach (var slot in _slots)
                 if (slot != _grabSlot || _grab <= 0)

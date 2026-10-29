@@ -35,7 +35,8 @@ internal sealed record TaskbarLayout(
     /// Раскладка с выбранным местом. Если в нужной зоне не хватает места (панель выровнена по левому краю
     /// и «Пуск» стоит у самого края, или приложений так много, что до трея ничего не осталось) — берём другую.
     /// </summary>
-    public TaskbarLayout Place(TaskbarPosition position)
+    /// <param name="edgeOffset">Дополнительный отступ от погоды или трея (пиксели при 100% масштабе).</param>
+    public TaskbarLayout Place(TaskbarPosition position, int edgeOffset = 0)
     {
         int min = 60 * Dpi / 96;
         bool left = position is TaskbarPosition.AfterWidgets or TaskbarPosition.CenterLeft or TaskbarPosition.BeforeStart;
@@ -48,6 +49,13 @@ internal sealed record TaskbarLayout(
             left = !left;
             atEnd = !left && !centered;
             zone = left ? LeftZone : RightZone;
+        }
+        else if (edgeOffset > 0)
+        {
+            // Отступ съедает место с нужной стороны, но не меньше, чем нужно для одного устройства.
+            int offset = Math.Min(edgeOffset * Dpi / 96, Math.Max(0, zone.End - zone.Start - min));
+            if (position == TaskbarPosition.AfterWidgets) zone.Start += offset;
+            else if (position == TaskbarPosition.BeforeTray) zone.End -= offset;
         }
         return this with { SlotStart = zone.Start, SlotEnd = zone.End, EndAligned = atEnd, Centered = centered };
     }

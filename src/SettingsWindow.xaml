@@ -244,6 +244,7 @@
             <!-- Оформление -->
             <TextBlock Text="{x:Static local:L.AppearanceHeader}" Style="{StaticResource SectionHeader}" />
             <Border x:Name="PositionCard" Style="{StaticResource Card}">
+                <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -265,6 +266,21 @@
                         <ComboBoxItem Content="{x:Static local:L.PositionBeforeTray}" />
                     </ComboBox>
                 </Grid>
+                <!-- Отступ — только для мест у погоды и у трея. -->
+                <Grid x:Name="OffsetRow" Margin="40,14,0,0" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="56" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="OffsetLabel" VerticalAlignment="Center" Margin="0,0,16,0" />
+                    <Slider x:Name="OffsetSlider" Grid.Column="1" Minimum="0" Maximum="300" SmallChange="1" LargeChange="10"
+                            IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"
+                            ValueChanged="OffsetSlider_ValueChanged" />
+                    <TextBlock x:Name="OffsetValue" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
+                               Style="{StaticResource Secondary}" />
+                </Grid>
+                </StackPanel>
             </Border>
             <Border x:Name="SeparatorCard" Style="{StaticResource Card}">
                 <Grid>

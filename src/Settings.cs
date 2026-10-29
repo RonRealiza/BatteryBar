@@ -45,6 +45,21 @@ internal sealed class Settings
 
     public TaskbarPosition Position { get; set; } = TaskbarPosition.AfterWidgets;
 
+    /// <summary>Дополнительный отступ (пиксели при 100% масштабе) от погоды — для положения «справа от погоды».</summary>
+    public int OffsetFromWidgets { get; set; }
+
+    /// <summary>Дополнительный отступ от трея — для положения «слева от трея».</summary>
+    public int OffsetFromTray { get; set; }
+
+    /// <summary>Отступ для текущего положения: у остальных положений его нет.</summary>
+    [JsonIgnore]
+    public int EdgeOffset => Position switch
+    {
+        TaskbarPosition.AfterWidgets => OffsetFromWidgets,
+        TaskbarPosition.BeforeTray => OffsetFromTray,
+        _ => 0,
+    };
+
     /// <summary>
     /// Порядок устройств, который пользователь задал перетаскиванием (Id устройств). Устройства не из списка
     /// идут после, в обычном порядке: клавиатуры, мыши, гарнитуры, геймпады.

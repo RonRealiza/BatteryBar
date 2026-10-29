@@ -268,7 +268,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
                     overlay.Reordered += SetDeviceOrder;
                     _overlays[layout.Handle] = overlay;
                 }
-                overlay.Render(_devices, layout.Place(_settings.Position), _settings.Separator);
+                overlay.Render(_devices, layout.Place(_settings.Position, _settings.EdgeOffset), _settings.Separator);
             }
             catch (Exception ex)
             {
@@ -336,12 +336,14 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     void ISettingsHost.ApplySettings()
     {
         _settings.Save();
-        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)} hideIcon={_settings.HideAppIcon} separator={_settings.Separator} position={_settings.Position}");
+        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)} hideIcon={_settings.HideAppIcon} separator={_settings.Separator} position={_settings.Position} offset={_settings.EdgeOffset}");
         _tray.Visible = !_settings.HideAppIcon;
         Redraw();
     }
 
     void ISettingsHost.RefreshNow() => _monitor.RefreshNow();
+
+    void ISettingsHost.Preview() => Redraw();
 
     Updater ISettingsHost.Updater => _updater;
 
