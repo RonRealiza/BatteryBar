@@ -96,6 +96,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
             new LogitechProvider(),
             new RazerProvider(),
             new HyperXProvider(),
+            new HyperXCloudIIISProvider(),
             new HeadsetsProvider(),
             new ZornherProvider(),
             new AulaProvider(),
@@ -187,14 +188,34 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         return overlay;
     }
 
-    /// <summary>Устройства в порядке пользователя; не упорядоченные им — следом, как пришли от опроса.</summary>
+    /// <summary>
+    /// Устройства в порядке пользователя (не упорядоченные им — следом, как пришли от опроса)
+    /// и с его названиями, если он их задал.
+    /// </summary>
     private List<DeviceBattery> Ordered(IReadOnlyList<DeviceBattery> devices)
     {
         var order = _settings.DeviceOrder;
         return devices.Select((d, i) => (d, i))
             .OrderBy(x => order.IndexOf(x.d.Id) is var k && k >= 0 ? k : order.Count + x.i)
-            .Select(x => x.d)
+            .Select(x => _settings.CustomNames.TryGetValue(x.d.Id, out var name) ? x.d with { Name = name } : x.d)
             .ToList();
+    }
+
+    /// <summary>Своё название устройства; пустое — вернуть то, что сообщает само устройство.</summary>
+    private void RenameDevice(string id, string? name)
+    {
+        name = name?.Trim();
+        string original = _polled.FirstOrDefault(d => d.Id == id)?.Name ?? "";
+        if (string.IsNullOrEmpty(name) || name == original)
+            _settings.CustomNames.Remove(id);
+        else
+            _settings.CustomNames[id] = name;
+        _settings.Save();
+        Log.Write($"device renamed: {original} -> {(_settings.CustomNames.TryGetValue(id, out var n) ? n : "(original)")}");
+        _devices = Ordered(_polled);
+        UpdateTooltip();
+        Redraw();
+        DevicesChanged?.Invoke();
     }
 
     /// <summary>
@@ -262,7 +283,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     /// <summary>Открыть окно «Устройство не определилось?» сразу после запуска (для проверки).</summary>
     public void ShowReportOnStart() => _ui.Post(_ =>
     {
-        var window = new ReportWindow(() => _devices);
+        var window = new ReportWindow(() => _polled);
         System.Windows.Forms.Integration.ElementHost.EnableModelessKeyboardInterop(window);
         window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
         window.Show();
@@ -298,6 +319,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     IReadOnlyList<DeviceBattery> ISettingsHost.Devices => _devices;
 
     void ISettingsHost.SetDeviceOrder(IReadOnlyList<string> ids) => SetDeviceOrder(ids);
+
+    void ISettingsHost.RenameDevice(string id, string? name) => RenameDevice(id, name);
 
     IReadOnlyList<TaskbarLayout> ISettingsHost.Layouts => _layouts;
 

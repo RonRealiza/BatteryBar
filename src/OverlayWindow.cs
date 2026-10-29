@@ -153,6 +153,14 @@ internal sealed class OverlayWindow : Form
             moreW = Width($"+{devices.Count}", textFont); // самый длинный вариант, чтобы место точно хватило
         }
 
+        // Блок переехал (например, по центру между приложениями и треем, а приложений стало больше) —
+        // значки остаются на прежнем месте экрана и плавно доезжают до нового.
+        if (_scene is { } old && old.Layout.Vertical == layout.Vertical && old.Layout.SlotStart != layout.SlotStart)
+        {
+            float shift = old.Layout.SlotStart - layout.SlotStart;
+            foreach (var slot in _slots)
+                if (slot.Pos is { } p && slot != _drag?.Slot) slot.Pos = p + shift;
+        }
         _scene?.Dispose();
         float gap = (layout.Vertical ? 14 : 20) * s;
         _scene = new Scene(layout, s, new Palette(layout.LightTheme), new Fonts(iconSize, boltH, textFont, badgeFont, fmt), gap, separator);
@@ -348,7 +356,7 @@ internal sealed class OverlayWindow : Form
                 for (int i = 1; i < _slots.Count; i++)
                 {
                     var prev = _slots[i - 1];
-                    DrawSeparator(g, (prev.Target + prev.Length * prev.Size + _slots[i].Target) / 2, across, _slots[i], sc);
+                    DrawSeparator(g, (prev.Target + prev.Length * prev.Size + _slots[i].Target) / 2, across, prev, _slots[i], sc);
                 }
             foreach (var slot in _slots)
                 if (slot != _grabSlot || _grab <= 0)
@@ -587,12 +595,15 @@ internal sealed class OverlayWindow : Form
     /// Тонкая линия посередине отступа, поперёк панели. Появляется и исчезает вместе с соседом:
     /// пока его место раздвигается, линия проявляется.
     /// </summary>
-    private static void DrawSeparator(Graphics g, float at, int across, Slot next, Scene sc)
+    private static void DrawSeparator(Graphics g, float at, int across, Slot prev, Slot next, Scene sc)
     {
         float s = sc.S;
         float length = (sc.Layout.Vertical ? 22 : 20) * s;
         float thick = Math.Max(1, MathF.Round(s));
-        using var brush = new SolidBrush(Fade(Color.FromArgb(sc.Layout.LightTheme ? 70 : 85, sc.Colors.Fg), next.Size));
+        // Линия видна не сильнее соседей: без этого при появлении блока успевали мелькнуть одни линии без значков.
+        float opacity = Math.Min(prev.Opacity, next.Opacity);
+        if (opacity <= 0) return;
+        using var brush = new SolidBrush(Fade(Color.FromArgb(sc.Layout.LightTheme ? 70 : 85, sc.Colors.Fg), opacity));
         float lo = (across - length) / 2f;
         // Целые пиксели — иначе сглаживание размывает линию в две бледные.
         if (sc.Layout.Vertical)

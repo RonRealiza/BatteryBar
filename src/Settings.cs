@@ -51,6 +51,9 @@ internal sealed class Settings
     /// </summary>
     public List<string> DeviceOrder { get; set; } = new();
 
+    /// <summary>Свои названия устройств (Id → название), например «Cobra Pro» вместо «Razer Mouse Dock Pro».</summary>
+    public Dictionary<string, string> CustomNames { get; set; } = new();
+
     /// <summary>Имена дисплеев (\\.\DISPLAY2) для режима Selected.</summary>
     public List<string> SelectedMonitors { get; set; } = new();
 

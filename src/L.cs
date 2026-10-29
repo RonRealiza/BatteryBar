@@ -43,6 +43,7 @@ public static class L
     public static string SettingsTitle => T("BatteryBar — настройки", "BatteryBar — settings");
     public static string AppSubtitle => T("Заряд беспроводных устройств на панели задач Windows", "Battery levels of your wireless devices on the Windows taskbar");
     public static string DevicesHeader => T("Устройства", "Devices");
+    public static string RenameTip => T("Переименовать. Пустое название — вернуть исходное", "Rename. Leave empty to restore the original name");
     public static string NoDevices => T("Подключённых устройств не найдено. Включите мышь, клавиатуру, гарнитуру или геймпад — они появятся здесь в течение нескольких секунд.",
         "No connected devices found. Turn on your mouse, keyboard, headset or gamepad — they will show up here within a few seconds.");
     public static string NotDetectedTitle => T("Устройство не определилось или работает неправильно?", "Device not detected or not working correctly?");

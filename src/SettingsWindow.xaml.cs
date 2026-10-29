@@ -32,6 +32,9 @@ internal interface ISettingsHost
     /// <summary>Пользователь перетащил устройства: новый порядок их Id.</summary>
     void SetDeviceOrder(IReadOnlyList<string> ids);
 
+    /// <summary>Своё название устройства; пустое — вернуть исходное.</summary>
+    void RenameDevice(string id, string? name);
+
     /// <summary>Язык сменился: применить его и переоткрыть окно настроек уже на новом языке.</summary>
     void LanguageChanged();
 
@@ -148,7 +151,7 @@ internal partial class SettingsWindow : Window
     {
         // Под мышью или пока строка садится на место список не перестраиваем — обновим чуть позже.
         if (Mouse.LeftButton != MouseButtonState.Pressed) _pressRow = null; // отпустили за пределами списка
-        if (_drag != null || _pressRow != null || DateTime.UtcNow < _settleUntil)
+        if (_drag != null || _pressRow != null || _editing != null || DateTime.UtcNow < _settleUntil)
         {
             _refreshAfterDrag.Stop();
             _refreshAfterDrag.Start();
@@ -284,6 +287,45 @@ internal partial class SettingsWindow : Window
         Animate(Lift(cell), ScaleTransform.ScaleYProperty, 1.02);
 
         DevicesList.CaptureMouse();
+    }
+
+    // Переименование: щелчок по названию — поле ввода на его месте. Enter или уход фокуса — сохранить, Esc — отменить.
+    private TextBox? _editing;
+
+    private void Name_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement view || view.DataContext is not DeviceRow row) return;
+        if (VisualTreeHelper.GetParent(view) is not Grid cell || cell.Children.OfType<TextBox>().FirstOrDefault() is not { } box) return;
+        view.Visibility = Visibility.Collapsed;
+        box.Text = row.RawName;
+        box.Tag = view;
+        box.Visibility = Visibility.Visible;
+        _editing = box;
+        box.Focus();
+        box.SelectAll();
+        e.Handled = true;
+    }
+
+    private void NameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) FinishRename((TextBox)sender, save: true);
+        else if (e.Key == Key.Escape) FinishRename((TextBox)sender, save: false);
+        else return;
+        e.Handled = true;
+    }
+
+    private void NameBox_LostFocus(object sender, KeyboardFocusChangedEventArgs e) => FinishRename((TextBox)sender, save: true);
+
+    private void FinishRename(TextBox box, bool save)
+    {
+        if (_editing != box) return; // уже закончили (Enter, а потом потеря фокуса)
+        _editing = null;
+        box.Visibility = Visibility.Collapsed;
+        if (box.Tag is FrameworkElement view) view.Visibility = Visibility.Visible;
+        if (save && box.DataContext is DeviceRow row && box.Text.Trim() != row.RawName)
+            _host.RenameDevice(row.Id, box.Text);
+        else
+            UpdateDevices(); // обновления, отложенные на время ввода
     }
 
     // Захват мыши отобрали (Alt+Tab, всплывающее окно) — строка садится туда, где сейчас.
@@ -492,6 +534,7 @@ internal partial class SettingsWindow : Window
         public DeviceRow(DeviceBattery d, bool light, FrameworkElement owner)
         {
             Id = d.Id;
+            RawName = d.Name;
             Icon = DeviceIcons.Geometry(d);
             Name = d.Badge is { Length: > 0 } b ? $"{d.Name} ({b})" : d.Name;
             PercentText = d.Percent is { } p ? $"{p}%" : "—";
@@ -514,6 +557,9 @@ internal partial class SettingsWindow : Window
         }
 
         public string Id { get; }
+
+        /// <summary>Название без подписи PS/XB — его и редактируем.</summary>
+        public string RawName { get; }
 
         public Geometry Icon { get; }
         public Geometry Bolt { get; } = DeviceIcons.BoltGeometry();

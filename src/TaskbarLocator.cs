@@ -55,8 +55,10 @@ internal sealed record TaskbarLayout(
 
 internal static class TaskbarLocator
 {
-    // UI Automation изредка не находит кнопки (панель перерисовывается) — тогда берём последнее удачное значение.
-    private static readonly Dictionary<IntPtr, (Rectangle Taskbar, (int, int) Left, (int, int) Right)> LastGood = new();
+    // UI Automation изредка не находит кнопки (панель перерисовывается), а у автоматически скрываемой панели
+    // они уезжают за край экрана. Тогда берём последние зоны, найденные на полностью видимой панели того же размера.
+    // Зоны храним от начала панели: панель ездит, а наш блок — её дочернее окно и ездит вместе с ней.
+    private static readonly Dictionary<IntPtr, (Size Size, (int Start, int End) Left, (int Start, int End) Right)> LastGood = new();
 
     /// <summary>Главная панель задач и панели на остальных мониторах.</summary>
     public static List<TaskbarLayout> LocateAll()
@@ -113,11 +115,15 @@ internal static class TaskbarLocator
             Log.Error("uia", ex);
         }
 
-        if (start == null)
+        // Автоскрытие: панель спрятана за краем экрана или выезжает — её кнопки нельзя мерить, берём запомненное.
+        int origin = vertical ? tb.Top : tb.Left;
+        bool fullyVisible = Screen.FromRectangle(tb).Bounds.Contains(tb);
+        if (start == null || !fullyVisible)
         {
-            if (LastGood.TryGetValue(taskbar, out var last) && last.Taskbar == tb)
-                return new TaskbarLayout(taskbar, monitor, isPrimary, tb, vertical, dpi, last.Left, last.Right, light);
-            return null;
+            if (LastGood.TryGetValue(taskbar, out var last) && last.Size == tb.Size)
+                return new TaskbarLayout(taskbar, monitor, isPrimary, tb, vertical, dpi,
+                    (last.Left.Start + origin, last.Left.End + origin), (last.Right.Start + origin, last.Right.End + origin), light);
+            if (start == null) return null;
         }
 
         // Дальше всё считаем вдоль панели: у горизонтальной это X (слева направо), у вертикальной — Y (сверху вниз).
@@ -149,7 +155,8 @@ internal static class TaskbarLocator
         var leftZone = (Start: (widgetsFirst ? Hi(widgets!.Value) : Lo(tb)) + margin, End: Lo(start.Value) - margin);
         var rightZone = (Start: appsEnd + margin, End: rightEnd - margin);
 
-        LastGood[taskbar] = (tb, leftZone, rightZone);
+        if (fullyVisible)
+            LastGood[taskbar] = (tb.Size, (leftZone.Start - origin, leftZone.End - origin), (rightZone.Start - origin, rightZone.End - origin));
         return new TaskbarLayout(taskbar, monitor, isPrimary, tb, vertical, dpi, leftZone, rightZone, light);
     }
 

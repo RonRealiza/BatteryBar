@@ -124,8 +124,11 @@ internal sealed class RazerProvider : IBatteryProvider
             byte status = rx[1];
             if (status == StatusBusy) continue; // беспроводной ресивер ещё ждёт ответа от устройства
             if (status == StatusOk && rx[7] == commandClass && rx[8] == commandId) return rx;
-            // ошибка, нет связи с устройством или не тот transaction id
             outcome = $"status {status:X2} tid {rx[2]:X2} cmd {rx[7]:X2}/{rx[8]:X2}";
+            // Чужой ответ: с тем же устройством параллельно общается Razer Synapse (у него, например, команды подсветки 0F/03),
+            // или это ещё наш прошлый ответ — устройство не успело обработать новую команду. Ждём дальше.
+            if (status == StatusOk) continue;
+            // ошибка, нет связи с устройством или не тот transaction id
             return null;
         }
         return null;
