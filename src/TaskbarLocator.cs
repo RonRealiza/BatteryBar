@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Automation;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -9,8 +10,9 @@ namespace BatteryBar;
 
 /// <summary>
 /// Где на панели задач рисовать блок. Vertical — панель стоит сбоку (слева или справа).
-/// Slot — свободная полоса вдоль панели (экранные физические пиксели): по X у горизонтальной, по Y у вертикальной.
-/// EndAligned = прижимать содержимое к концу полосы (правому/нижнему краю), а не к началу.
+/// Координаты вдоль панели — экранные физические пиксели: X у горизонтальной, Y у вертикальной.
+/// LeftZone — свободное место до «Пуска» (за погодой, если она в начале), RightZone — от последнего приложения до трея
+/// (или до погоды, если она в конце). Slot — где рисовать сейчас (см. Place); EndAligned — прижимать к концу полосы.
 /// Monitor — имя дисплея Windows (\\.\DISPLAY1), по нему запоминается выбор мониторов.
 /// </summary>
 internal sealed record TaskbarLayout(
@@ -20,15 +22,41 @@ internal sealed record TaskbarLayout(
     Rectangle Taskbar,
     bool Vertical,
     int Dpi,
-    int SlotStart,
-    int SlotEnd,
-    bool EndAligned,
-    bool LightTheme);
+    (int Start, int End) LeftZone,
+    (int Start, int End) RightZone,
+    bool LightTheme)
+{
+    public int SlotStart { get; init; }
+    public int SlotEnd { get; init; }
+    public bool EndAligned { get; init; }
+    public bool Centered { get; init; }
+
+    /// <summary>
+    /// Раскладка с выбранным местом. Если в нужной зоне не хватает места (панель выровнена по левому краю
+    /// и «Пуск» стоит у самого края, или приложений так много, что до трея ничего не осталось) — берём другую.
+    /// </summary>
+    public TaskbarLayout Place(TaskbarPosition position)
+    {
+        int min = 60 * Dpi / 96;
+        bool left = position is TaskbarPosition.AfterWidgets or TaskbarPosition.CenterLeft or TaskbarPosition.BeforeStart;
+        bool centered = position is TaskbarPosition.CenterLeft or TaskbarPosition.CenterRight;
+        bool atEnd = position is TaskbarPosition.BeforeStart or TaskbarPosition.BeforeTray;
+        var zone = left ? LeftZone : RightZone;
+        if (zone.End - zone.Start < min)
+        {
+            // В другой зоне встаём посередине, если так и просили, иначе у её дальнего края: у трея или сразу за погодой.
+            left = !left;
+            atEnd = !left && !centered;
+            zone = left ? LeftZone : RightZone;
+        }
+        return this with { SlotStart = zone.Start, SlotEnd = zone.End, EndAligned = atEnd, Centered = centered };
+    }
+}
 
 internal static class TaskbarLocator
 {
     // UI Automation изредка не находит кнопки (панель перерисовывается) — тогда берём последнее удачное значение.
-    private static readonly Dictionary<IntPtr, (Rectangle Taskbar, int Start, int End, bool EndAligned)> LastGood = new();
+    private static readonly Dictionary<IntPtr, (Rectangle Taskbar, (int, int) Left, (int, int) Right)> LastGood = new();
 
     /// <summary>Главная панель задач и панели на остальных мониторах.</summary>
     public static List<TaskbarLayout> LocateAll()
@@ -62,12 +90,23 @@ internal static class TaskbarLocator
         int margin = 8 * dpi / 96;
 
         Rectangle? widgets = null, start = null;
+        var buttons = new List<(string Id, string Class, Rectangle Bounds)>();
         try
         {
+            // Все кнопки панели одним запросом (~25 мс): погода, «Пуск», поиск, приложения, значки трея.
             var root = AutomationElement.FromHandle(taskbar);
+            var found = root.FindAll(TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button));
+            foreach (AutomationElement el in found)
+            {
+                var b = el.Current.BoundingRectangle;
+                if (b.IsEmpty || b.Width < 1 || b.Height < 1) continue;
+                buttons.Add((el.Current.AutomationId, el.Current.ClassName,
+                    Rectangle.FromLTRB((int)b.Left, (int)b.Top, (int)b.Right, (int)b.Bottom)));
+            }
             // Кнопка погоды может быть и на дополнительных панелях — зависит от версии Windows и настроек.
-            widgets = FindBounds(root, "WidgetsButton");
-            start = FindBounds(root, "StartButton");
+            widgets = buttons.Where(b => b.Id == "WidgetsButton").Select(b => (Rectangle?)b.Bounds).FirstOrDefault();
+            start = buttons.Where(b => b.Id == "StartButton").Select(b => (Rectangle?)b.Bounds).FirstOrDefault();
         }
         catch (Exception ex)
         {
@@ -77,49 +116,41 @@ internal static class TaskbarLocator
         if (start == null)
         {
             if (LastGood.TryGetValue(taskbar, out var last) && last.Taskbar == tb)
-                return new TaskbarLayout(taskbar, monitor, isPrimary, tb, vertical, dpi, last.Start, last.End, last.EndAligned, light);
+                return new TaskbarLayout(taskbar, monitor, isPrimary, tb, vertical, dpi, last.Left, last.Right, light);
             return null;
         }
 
         // Дальше всё считаем вдоль панели: у горизонтальной это X (слева направо), у вертикальной — Y (сверху вниз).
         int Lo(Rectangle x) => vertical ? x.Top : x.Left;
         int Hi(Rectangle x) => vertical ? x.Bottom : x.Right;
-        int length = vertical ? tb.Height : tb.Width;
-        int center = Lo(tb) + length / 2;
-        // Иконки по центру, если перед «Пуском» есть свободное место (за погодой, если она в начале).
-        // При выравнивании к краю «Пуск» стоит вплотную к краю панели, а погода уезжает в конец.
-        int before = widgets is { } wb && Hi(wb) < center ? Hi(wb) : Lo(tb);
-        bool centered = Lo(start.Value) - before > 40 * dpi / 96;
-        int slotStart, slotEnd;
-        bool endAligned;
+        int center = Lo(tb) + (vertical ? tb.Height : tb.Width) / 2;
+        bool widgetsFirst = widgets is { } wf && Hi(wf) < center;
 
-        if (centered)
-        {
-            // Погода в начале панели — встаём сразу за ней, до кнопки «Пуск». Без погоды — от края панели.
-            slotStart = widgets is { } w && Hi(w) < center ? Hi(w) + margin : Lo(tb) + margin;
-            slotEnd = Lo(start.Value) - margin;
-            endAligned = false;
-        }
-        else
-        {
-            // Иконки прижаты к началу — погода уезжает к трею, встаём перед ней (или перед треем/часами).
-            int anchor;
-            if (widgets is { } w && Lo(w) > center)
-                anchor = Lo(w);
-            else
-            {
-                var tray = Native.FindWindowEx(taskbar, IntPtr.Zero, isPrimary ? "TrayNotifyWnd" : "ClockButton", null);
-                anchor = tray != IntPtr.Zero && Native.GetWindowRect(tray, out var tr)
-                    ? Lo(Rectangle.FromLTRB(tr.Left, tr.Top, tr.Right, tr.Bottom))
-                    : Hi(tb);
-            }
-            slotEnd = anchor - margin;
-            slotStart = center;
-            endAligned = true;
-        }
+        // Трей (на дополнительных панелях — только часы): самая первая его кнопка во второй половине панели.
+        // Окна часов на дополнительной панели Windows 11 нет — там они видны только через UI Automation.
+        // Если кнопок не нашлось — окно трея, а без него — конец панели.
+        int trayLo = buttons.Where(b => b.Class.StartsWith("SystemTray", StringComparison.Ordinal) && Lo(b.Bounds) > center)
+            .Select(b => (int?)Lo(b.Bounds)).Min()
+            ?? (Native.FindWindowEx(taskbar, IntPtr.Zero, isPrimary ? "TrayNotifyWnd" : "ClockButton", null) is var trayWnd
+                && trayWnd != IntPtr.Zero && Native.GetWindowRect(trayWnd, out var tr)
+                ? Lo(Rectangle.FromLTRB(tr.Left, tr.Top, tr.Right, tr.Bottom))
+                : Hi(tb));
+        // Погода в конце панели (панель выровнена по левому краю) стоит перед треем.
+        int rightEnd = widgets is { } wl && !widgetsFirst ? Math.Min(Lo(wl), trayLo) : trayLo;
 
-        LastGood[taskbar] = (tb, slotStart, slotEnd, endAligned);
-        return new TaskbarLayout(taskbar, monitor, isPrimary, tb, vertical, dpi, slotStart, slotEnd, endAligned, light);
+        // Конец «Пуска», поиска, представления задач и закреплённых приложений — всё между «Пуском» и треем.
+        int appsEnd = buttons
+            .Where(b => b.Id != "WidgetsButton" && !b.Class.StartsWith("SystemTray", StringComparison.Ordinal)
+                        && Lo(b.Bounds) >= Lo(start.Value) && Hi(b.Bounds) <= rightEnd)
+            .Select(b => Hi(b.Bounds))
+            .DefaultIfEmpty(Hi(start.Value))
+            .Max();
+
+        var leftZone = (Start: (widgetsFirst ? Hi(widgets!.Value) : Lo(tb)) + margin, End: Lo(start.Value) - margin);
+        var rightZone = (Start: appsEnd + margin, End: rightEnd - margin);
+
+        LastGood[taskbar] = (tb, leftZone, rightZone);
+        return new TaskbarLayout(taskbar, monitor, isPrimary, tb, vertical, dpi, leftZone, rightZone, light);
     }
 
     private static Rectangle? FindBounds(AutomationElement root, string automationId)

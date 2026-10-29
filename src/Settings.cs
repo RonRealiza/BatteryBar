@@ -11,6 +11,15 @@ internal enum MonitorMode { Primary, All, Selected }
 
 internal enum DisplayMode { Taskbar, Tray, Both }
 
+/// <summary>Чем разделять устройства на панели задач.</summary>
+internal enum SeparatorStyle { Gap, Line }
+
+/// <summary>
+/// Где на панели задач стоит блок. Слева от «Пуска»: сразу за погодой, посередине или вплотную к «Пуску».
+/// Справа: сразу за приложениями, посередине или вплотную к трею. Порядок — как в списке настроек.
+/// </summary>
+internal enum TaskbarPosition { AfterWidgets, CenterLeft, BeforeStart, AfterApps, CenterRight, BeforeTray }
+
 /// <summary>Настройки пользователя в %LOCALAPPDATA%\BatteryBar\settings.json.</summary>
 internal sealed class Settings
 {
@@ -31,6 +40,16 @@ internal sealed class Settings
     [JsonIgnore] public bool ShowInTray => Display != DisplayMode.Taskbar;
 
     public MonitorMode Monitors { get; set; } = MonitorMode.Primary;
+
+    public SeparatorStyle Separator { get; set; } = SeparatorStyle.Gap;
+
+    public TaskbarPosition Position { get; set; } = TaskbarPosition.AfterWidgets;
+
+    /// <summary>
+    /// Порядок устройств, который пользователь задал перетаскиванием (Id устройств). Устройства не из списка
+    /// идут после, в обычном порядке: клавиатуры, мыши, гарнитуры, геймпады.
+    /// </summary>
+    public List<string> DeviceOrder { get; set; } = new();
 
     /// <summary>Имена дисплеев (\\.\DISPLAY2) для режима Selected.</summary>
     public List<string> SelectedMonitors { get; set; } = new();

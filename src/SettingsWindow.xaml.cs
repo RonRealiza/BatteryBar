@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Input;
+using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Animation;
 using Microsoft.Win32;
 using Screen = System.Windows.Forms.Screen;
 
@@ -23,6 +28,9 @@ internal interface ISettingsHost
     void ApplySettings();
 
     void RefreshNow();
+
+    /// <summary>Пользователь перетащил устройства: новый порядок их Id.</summary>
+    void SetDeviceOrder(IReadOnlyList<string> ids);
 
     /// <summary>Язык сменился: применить его и переоткрыть окно настроек уже на новом языке.</summary>
     void LanguageChanged();
@@ -50,6 +58,8 @@ internal partial class SettingsWindow : Window
 
         _loading = true;
         DisplayCombo.SelectedIndex = (int)host.Settings.Display;
+        SeparatorCombo.SelectedIndex = (int)host.Settings.Separator;
+        PositionCombo.SelectedIndex = (int)host.Settings.Position;
         LanguageCombo.SelectedIndex = (int)host.Settings.Language;
         AutostartCheck.IsChecked = host.Autostart;
         AutoUpdateCheck.IsChecked = host.Settings.AutoCheckUpdates;
@@ -65,6 +75,11 @@ internal partial class SettingsWindow : Window
         UpdateUpdateCard();
 
         host.DevicesChanged += UpdateDevices;
+        _refreshAfterDrag.Tick += (_, _) =>
+        {
+            _refreshAfterDrag.Stop();
+            UpdateDevices();
+        };
         host.Updater.Changed += UpdateUpdateCard;
         Closed += (_, _) =>
         {
@@ -131,10 +146,200 @@ internal partial class SettingsWindow : Window
 
     private void UpdateDevices()
     {
+        // Под мышью или пока строка садится на место список не перестраиваем — обновим чуть позже.
+        if (Mouse.LeftButton != MouseButtonState.Pressed) _pressRow = null; // отпустили за пределами списка
+        if (_drag != null || _pressRow != null || DateTime.UtcNow < _settleUntil)
+        {
+            _refreshAfterDrag.Stop();
+            _refreshAfterDrag.Start();
+            return;
+        }
         bool light = AppsUseLightTheme();
-        var rows = _host.Devices.Select(d => new DeviceRow(d, light, this)).ToList();
-        DevicesList.ItemsSource = rows;
-        NoDevicesCard.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _rows = new ObservableCollection<DeviceRow>(_host.Devices.Select(d => new DeviceRow(d, light, this)));
+        DevicesList.ItemsSource = _rows;
+        NoDevicesCard.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // Перетаскивание строк устройств. Схваченная строка приподнимается (чуть крупнее, с тенью) и едет за мышью,
+    // остальные плавно уступают ей место; после отпускания она мягко садится в новую ячейку.
+    private ObservableCollection<DeviceRow> _rows = new();
+    private DeviceRow? _pressRow;
+    private Point _pressAt;
+    private DragState? _drag;
+    private DateTime _settleUntil;
+    private readonly System.Windows.Threading.DispatcherTimer _refreshAfterDrag = new() { Interval = TimeSpan.FromMilliseconds(400) };
+
+    private static readonly Duration Quick = new(TimeSpan.FromMilliseconds(180));
+    private static readonly IEasingFunction EaseOut = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+    /// <summary>Ячейки строк на момент захвата: верх и высота каждой (с отступом до следующей).</summary>
+    private sealed class DragState
+    {
+        public required int From;
+        public required FrameworkElement[] Cells;
+        public required double[] Tops;
+        public required double[] Heights;
+        public required double StartY;
+        public int To;
+        public double Offset;
+    }
+
+    private static TranslateTransform Shift(FrameworkElement cell) => (TranslateTransform)((TransformGroup)cell.RenderTransform).Children[1];
+    private static ScaleTransform Lift(FrameworkElement cell) => (ScaleTransform)((TransformGroup)cell.RenderTransform).Children[0];
+
+    private static void Animate(Animatable target, DependencyProperty property, double to, Duration? duration = null) =>
+        target.BeginAnimation(property, new DoubleAnimation(to, duration ?? Quick) { EasingFunction = EaseOut });
+
+    private void DevicesList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Схватить строку можно только за ручку справа.
+        _pressRow = null;
+        for (var el = e.OriginalSource as DependencyObject; el != null && el != DevicesList; el = VisualTreeHelper.GetParent(el))
+        {
+            if (el is FrameworkElement { Tag: "DragHandle" } handle)
+            {
+                _pressRow = handle.DataContext as DeviceRow;
+                break;
+            }
+        }
+        _pressAt = e.GetPosition(DevicesList);
+    }
+
+    private void DevicesList_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_pressRow == null || e.LeftButton != MouseButtonState.Pressed) return;
+        var at = e.GetPosition(DevicesList);
+        if (_drag == null)
+        {
+            if (Math.Abs(at.Y - _pressAt.Y) < SystemParameters.MinimumVerticalDragDistance || _rows.Count < 2) return;
+            StartDrag();
+            if (_drag == null) return;
+        }
+
+        var d = _drag;
+        double minOffset = d.Tops[0] - d.Tops[d.From];
+        double maxOffset = d.Tops[^1] + d.Heights[^1] - (d.Tops[d.From] + d.Heights[d.From]);
+        d.Offset = Math.Clamp(at.Y - d.StartY, minOffset, maxOffset);
+        Shift(d.Cells[d.From]).BeginAnimation(TranslateTransform.YProperty, null);
+        Shift(d.Cells[d.From]).Y = d.Offset;
+
+        // Соседняя строка уступает место, как только край схваченной заходит за её середину.
+        double top = d.Tops[d.From] + d.Offset, bottom = top + d.Heights[d.From];
+        int to = d.From;
+        for (int i = 0; i < d.Cells.Length; i++)
+        {
+            double middle = d.Tops[i] + d.Heights[i] / 2;
+            if (i > d.From && bottom > middle) to++;
+            if (i < d.From && top < middle) to--;
+        }
+        if (to == d.To) return;
+        d.To = to;
+
+        // Строки между старым и новым местом сдвигаются на высоту схваченной, остальные возвращаются.
+        for (int i = 0; i < d.Cells.Length; i++)
+        {
+            if (i == d.From) continue;
+            double shift = d.From < to && i > d.From && i <= to ? -d.Heights[d.From]
+                         : d.From > to && i >= to && i < d.From ? d.Heights[d.From]
+                         : 0;
+            Animate(Shift(d.Cells[i]), TranslateTransform.YProperty, shift);
+        }
+    }
+
+    private void StartDrag()
+    {
+        // Нажали на строку старого списка (он перестраивается после каждой перестановки) — ищем её по Id в текущем.
+        int from = _rows.Select(r => r.Id).ToList().IndexOf(_pressRow!.Id);
+        if (from < 0)
+        {
+            _pressRow = null;
+            return;
+        }
+        var cells = new FrameworkElement[_rows.Count];
+        for (int i = 0; i < _rows.Count; i++)
+        {
+            if (DevicesList.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement c) return;
+            cells[i] = c;
+        }
+        var tops = cells.Select(c => c.TranslatePoint(new Point(0, 0), DevicesList).Y).ToArray();
+        // Высота ячейки — до верха следующей, чтобы учесть отступ между карточками.
+        var heights = cells.Select((c, i) => i + 1 < cells.Length ? tops[i + 1] - tops[i] : c.ActualHeight).ToArray();
+        foreach (var c in cells)
+        {
+            c.RenderTransformOrigin = new Point(0.5, 0.5);
+            c.RenderTransform = new TransformGroup { Children = { new ScaleTransform(1, 1), new TranslateTransform() } };
+        }
+        _drag = new DragState { From = from, To = from, Cells = cells, Tops = tops, Heights = heights, StartY = _pressAt.Y };
+
+        // Подъём: поверх соседей, чуть крупнее, с мягкой тенью и непрозрачным фоном (карточки полупрозрачные).
+        var cell = cells[from];
+        Panel.SetZIndex(cell, 1);
+        if (VisualTreeHelper.GetChildrenCount(cell) > 0 && VisualTreeHelper.GetChild(cell, 0) is Border card)
+            card.Background = (TryFindResource("SolidBackgroundFillColorTertiaryBrush") ?? TryFindResource("SolidBackgroundFillColorBaseBrush")) as Brush
+                              ?? card.Background;
+        var shadow = new DropShadowEffect { BlurRadius = 18, ShadowDepth = 3, Direction = 270, Opacity = 0, Color = Colors.Black };
+        cell.Effect = shadow;
+        Animate(shadow, DropShadowEffect.OpacityProperty, 0.35);
+        Animate(Lift(cell), ScaleTransform.ScaleXProperty, 1.02);
+        Animate(Lift(cell), ScaleTransform.ScaleYProperty, 1.02);
+
+        DevicesList.CaptureMouse();
+    }
+
+    // Захват мыши отобрали (Alt+Tab, всплывающее окно) — строка садится туда, где сейчас.
+    private void DevicesList_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_drag != null) DevicesList_PreviewMouseLeftButtonUp(sender, null!);
+    }
+
+    private void DevicesList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _pressRow = null;
+        if (_drag is not { } d) return;
+        _drag = null;
+        DevicesList.ReleaseMouseCapture();
+
+        // Где строка видна сейчас и где окажется после перестановки — разницу проезжает анимацией.
+        double visualTop = d.Tops[d.From] + d.Offset;
+        double newTop = d.To > d.From ? d.Tops[d.To] + d.Heights[d.To] - d.Heights[d.From] : d.Tops[d.To];
+        var row = _rows[d.From];
+        foreach (var c in d.Cells)
+        {
+            Shift(c).BeginAnimation(TranslateTransform.YProperty, null);
+            Shift(c).Y = 0;
+        }
+        if (d.To != d.From) _rows.Move(d.From, d.To);
+        DevicesList.UpdateLayout();
+
+        if (DevicesList.ItemContainerGenerator.ContainerFromItem(row) is FrameworkElement cell)
+        {
+            if (cell.RenderTransform is not TransformGroup)
+            {
+                cell.RenderTransformOrigin = new Point(0.5, 0.5);
+                cell.RenderTransform = new TransformGroup { Children = { new ScaleTransform(1.02, 1.02), new TranslateTransform() } };
+            }
+            Shift(cell).Y = visualTop - newTop;
+            var settle = new Duration(TimeSpan.FromMilliseconds(220));
+            Animate(Shift(cell), TranslateTransform.YProperty, 0, settle);
+            Animate(Lift(cell), ScaleTransform.ScaleXProperty, 1, settle);
+            Animate(Lift(cell), ScaleTransform.ScaleYProperty, 1, settle);
+            if (cell.Effect is DropShadowEffect shadow)
+            {
+                var fade = new DoubleAnimation(0, settle) { EasingFunction = EaseOut };
+                fade.Completed += (_, _) =>
+                {
+                    cell.Effect = null;
+                    Panel.SetZIndex(cell, 0);
+                    if (VisualTreeHelper.GetChildrenCount(cell) > 0 && VisualTreeHelper.GetChild(cell, 0) is Border card)
+                        card.ClearValue(Border.BackgroundProperty);
+                };
+                shadow.BeginAnimation(DropShadowEffect.OpacityProperty, fade);
+            }
+        }
+
+        _settleUntil = DateTime.UtcNow.AddMilliseconds(300);
+        if (d.To != d.From)
+            _host.SetDeviceOrder(_rows.Select(r => r.Id).ToList());
     }
 
     private void LoadMonitors()
@@ -169,6 +374,11 @@ internal partial class SettingsWindow : Window
     {
         MonitorsCard.IsEnabled = _host.Settings.ShowOnTaskbar;
         MonitorsCard.Opacity = MonitorsCard.IsEnabled ? 1 : 0.5;
+        // Разделитель есть только у блока на панели задач.
+        SeparatorCard.IsEnabled = _host.Settings.ShowOnTaskbar;
+        SeparatorCard.Opacity = SeparatorCard.IsEnabled ? 1 : 0.5;
+        PositionCard.IsEnabled = _host.Settings.ShowOnTaskbar;
+        PositionCard.Opacity = PositionCard.IsEnabled ? 1 : 0.5;
         MonitorChecks.IsEnabled = _host.Settings.Monitors == MonitorMode.Selected;
     }
 
@@ -178,6 +388,20 @@ internal partial class SettingsWindow : Window
         _host.Settings.Display = (DisplayMode)DisplayCombo.SelectedIndex;
         _host.ApplySettings();
         UpdateEnabledState();
+    }
+
+    private void PositionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || PositionCombo.SelectedIndex < 0) return;
+        _host.Settings.Position = (TaskbarPosition)PositionCombo.SelectedIndex;
+        _host.ApplySettings();
+    }
+
+    private void SeparatorCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SeparatorCombo.SelectedIndex < 0) return;
+        _host.Settings.Separator = (SeparatorStyle)SeparatorCombo.SelectedIndex;
+        _host.ApplySettings();
     }
 
     private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -267,6 +491,7 @@ internal partial class SettingsWindow : Window
     {
         public DeviceRow(DeviceBattery d, bool light, FrameworkElement owner)
         {
+            Id = d.Id;
             Icon = DeviceIcons.Geometry(d);
             Name = d.Badge is { Length: > 0 } b ? $"{d.Name} ({b})" : d.Name;
             PercentText = d.Percent is { } p ? $"{p}%" : "—";
@@ -287,6 +512,8 @@ internal partial class SettingsWindow : Window
             ChargeBrush = new SolidColorBrush(success);
             ChargeVisibility = d.State == ChargeState.Charging ? Visibility.Visible : Visibility.Collapsed;
         }
+
+        public string Id { get; }
 
         public Geometry Icon { get; }
         public Geometry Bolt { get; } = DeviceIcons.BoltGeometry();

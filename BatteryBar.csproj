@@ -1,28 +1,28 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <UseWindowsForms>true</UseWindowsForms>
-    <!-- Нужен только ради UIAutomationClient (поиск кнопок на панели задач). -->
+    <!-- РќСѓР¶РµРЅ С‚РѕР»СЊРєРѕ СЂР°РґРё UIAutomationClient (РїРѕРёСЃРє РєРЅРѕРїРѕРє РЅР° РїР°РЅРµР»Рё Р·Р°РґР°С‡). -->
     <UseWPF>true</UseWPF>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RootNamespace>BatteryBar</RootNamespace>
     <AssemblyName>BatteryBar</AssemblyName>
-    <Version>0.1.5</Version>
+    <Version>0.2.0</Version>
     <ApplicationIcon>assets\BatteryBar.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Иконка окна настроек и трея; перерисовать — tools\make-icon.ps1. -->
+    <!-- РРєРѕРЅРєР° РѕРєРЅР° РЅР°СЃС‚СЂРѕРµРє Рё С‚СЂРµСЏ; РїРµСЂРµСЂРёСЃРѕРІР°С‚СЊ вЂ” tools\make-icon.ps1. -->
     <Resource Include="assets\BatteryBar.ico" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Силуэты геймпадов (SVG из редактора); разбирает DeviceIcons. -->
+    <!-- РЎРёР»СѓСЌС‚С‹ РіРµР№РјРїР°РґРѕРІ (SVG РёР· СЂРµРґР°РєС‚РѕСЂР°); СЂР°Р·Р±РёСЂР°РµС‚ DeviceIcons. -->
     <EmbeddedResource Include="assets\icons\*.svg" LogicalName="icons.%(Filename).svg" />
   </ItemGroup>
 

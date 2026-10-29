@@ -24,10 +24,12 @@
 - **Or in the tray.** Each device can get its own tray icon with the charge level — or use both at once.
 - **Charging and low battery at a glance.** A green bolt while charging; the percentage turns red at 20% and below.
 - **Devices come and go automatically.** A device appears when it is turned on and disappears when it is turned off. A sleeping mouse keeps its last known level instead of blinking.
+- **Make it yours.** Six positions on the taskbar (after the weather, next to Start, after the apps, next to the tray, or centered), a space or a line between devices, and device order by dragging — right on the taskbar or in Settings. Devices appear and disappear with a smooth animation.
 - **Several gamepads.** Gamepads are labelled PS / PS4 / XB, with a number if you have two of the same kind.
 - **Windows 11 look.** Settings window and tray menu in the native Fluent style, light or dark — follows your Windows theme.
 - **English and Russian.** Picks your system language by default.
 - **Starts with Windows**, if you want it to.
+- **The tray icon can be hidden** — then launching BatteryBar again opens Settings.
 - **One-click updates.** A red dot on the tray icon tells you a new version is out; install it right from Settings.
 
 ## Tray icons
@@ -55,7 +57,9 @@ Instead of the taskbar block (or together with it), every device can get its own
 | AirPods and Beats | ✅ tested with AirPods Pro 2 |
 | Zornher ZH870 keyboard | ✅ tested |
 | DualShock 4 | 🧪 should work |
-| Razer wireless mice, keyboards and headsets | 🧪 should work |
+| Razer wireless mice, including through the Mouse Dock Pro | ✅ tested with Cobra Pro on a Mouse Dock Pro |
+| Razer keyboards and headsets | 🧪 should work |
+| AULA keyboards with a 2.4G receiver (F75, F87, AU75 and others) | 🧪 should work |
 | SteelSeries Arctis Nova 7 / 7P / 7X, Nova 5, Nova Pro Wireless, Arctis 7 / 7+ / 1 / 9 / Pro | 🧪 should work |
 | HyperX Cloud Alpha Wireless, Cloud II Wireless, Cloud Flight | 🧪 should work |
 | Corsair Void and related headsets | 🧪 should work |

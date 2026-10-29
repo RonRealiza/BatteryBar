@@ -48,9 +48,10 @@ internal sealed class BatteryMonitor : IDisposable
         _wake.Set();
     }
 
-    // Мыши Logitech и Razer засыпают, и ресивер их не видит — держим последнее значение, пока не ответят.
+    // Мыши Logitech и Razer и клавиатуры AULA засыпают, и ресивер их не видит — держим последнее значение, пока не ответят.
     private static bool IsSticky(string id) =>
-        id.StartsWith("logi:", StringComparison.Ordinal) || id.StartsWith("razer:", StringComparison.Ordinal);
+        id.StartsWith("logi:", StringComparison.Ordinal) || id.StartsWith("razer:", StringComparison.Ordinal)
+        || id.StartsWith("aula:", StringComparison.Ordinal);
 
     private void Run()
     {

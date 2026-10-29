@@ -52,7 +52,11 @@
 
             <!-- Устройства -->
             <TextBlock Text="{x:Static local:L.DevicesHeader}" Style="{StaticResource SectionHeader}" />
-            <ItemsControl x:Name="DevicesList">
+            <ItemsControl x:Name="DevicesList" Background="Transparent"
+                          PreviewMouseLeftButtonDown="DevicesList_PreviewMouseLeftButtonDown"
+                          PreviewMouseMove="DevicesList_PreviewMouseMove"
+                          PreviewMouseLeftButtonUp="DevicesList_PreviewMouseLeftButtonUp"
+                          LostMouseCapture="DevicesList_LostMouseCapture">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Style="{StaticResource Card}">
@@ -77,6 +81,14 @@
                                           Stretch="Uniform" Height="15" VerticalAlignment="Center" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding PercentText}" FontSize="20" FontWeight="SemiBold"
                                                Foreground="{Binding PercentBrush}" />
+                                    <!-- Ручка: только за неё строку можно перетащить, чтобы поменять порядок устройств.
+                                         Прозрачный фон — чтобы вся зона вокруг значка ловила мышь. -->
+                                    <Border Tag="DragHandle" Background="Transparent" Cursor="SizeNS" Margin="10,-14,-16,-14"
+                                            Padding="8,0,16,0">
+                                        <TextBlock Text="&#xE700;" FontFamily="{StaticResource IconFont}" FontSize="16"
+                                                   VerticalAlignment="Center" Opacity="0.55"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    </Border>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -208,6 +220,51 @@
                         <ComboBoxItem Content="{x:Static local:L.LanguageAuto}" />
                         <ComboBoxItem Content="Русский" />
                         <ComboBoxItem Content="English" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- Оформление -->
+            <TextBlock Text="{x:Static local:L.AppearanceHeader}" Style="{StaticResource SectionHeader}" />
+            <Border x:Name="PositionCard" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE8A0;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.PositionTitle}" />
+                        <TextBlock Style="{StaticResource Secondary}" Text="{x:Static local:L.PositionHint}" />
+                    </StackPanel>
+                    <ComboBox x:Name="PositionCombo" Grid.Column="2" MinWidth="220" VerticalAlignment="Center"
+                              SelectionChanged="PositionCombo_SelectionChanged">
+                        <ComboBoxItem Content="{x:Static local:L.PositionAfterWidgets}" />
+                        <ComboBoxItem Content="{x:Static local:L.PositionCenterLeft}" />
+                        <ComboBoxItem Content="{x:Static local:L.PositionBeforeStart}" />
+                        <ComboBoxItem Content="{x:Static local:L.PositionAfterApps}" />
+                        <ComboBoxItem Content="{x:Static local:L.PositionCenterRight}" />
+                        <ComboBoxItem Content="{x:Static local:L.PositionBeforeTray}" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+            <Border x:Name="SeparatorCard" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE790;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.SeparatorTitle}" />
+                        <TextBlock Style="{StaticResource Secondary}" Text="{x:Static local:L.SeparatorHint}" />
+                    </StackPanel>
+                    <ComboBox x:Name="SeparatorCombo" Grid.Column="2" MinWidth="220" VerticalAlignment="Center"
+                              SelectionChanged="SeparatorCombo_SelectionChanged">
+                        <ComboBoxItem Content="{x:Static local:L.SeparatorGap}" />
+                        <ComboBoxItem Content="{x:Static local:L.SeparatorLine}" />
                     </ComboBox>
                 </Grid>
             </Border>

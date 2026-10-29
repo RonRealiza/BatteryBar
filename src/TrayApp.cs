@@ -33,6 +33,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     private volatile bool _stopped;
 
     private IReadOnlyList<DeviceBattery> _devices = Array.Empty<DeviceBattery>();
+    private IReadOnlyList<DeviceBattery> _polled = Array.Empty<DeviceBattery>();
     private volatile IReadOnlyList<TaskbarLayout> _layouts = Array.Empty<TaskbarLayout>();
 
     public TrayApp()
@@ -54,6 +55,12 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         // Объект Application нужен для ресурсов темы; цикл сообщений остаётся у WinForms.
         var wpf = System.Windows.Application.Current
                   ?? new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+        // Ошибка в окне настроек или отчёта не должна ронять всю программу: пишем в журнал и продолжаем.
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.UnhandledException += (_, e) =>
+        {
+            Log.Write($"[wpf] {e.Exception}");
+            e.Handled = true;
+        };
 #pragma warning disable WPF0001 // ThemeMode в .NET 9 помечен как экспериментальный
         wpf.ThemeMode = System.Windows.ThemeMode.System;
 #pragma warning restore WPF0001
@@ -91,6 +98,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
             new HyperXProvider(),
             new HeadsetsProvider(),
             new ZornherProvider(),
+            new AulaProvider(),
             new DualSenseProvider(),
             new DualShock4Provider(),
             new XboxProvider(),
@@ -100,7 +108,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         _monitor.Updated += devices => _ui.Post(_ =>
         {
             if (_stopped) return;
-            _devices = devices;
+            _polled = devices;
+            _devices = Ordered(devices);
             UpdateTooltip();
             Redraw();
             DevicesChanged?.Invoke();
@@ -109,6 +118,11 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         _topmostTimer = new System.Windows.Forms.Timer { Interval = 500 };
         _topmostTimer.Tick += (_, _) =>
         {
+            if (_overlays.Values.Any(o => o.IsDetached))
+            {
+                Log.Write("overlay detached from taskbar — recreating");
+                Redraw();
+            }
             foreach (var overlay in _overlays.Values) overlay.KeepOnTop();
         };
         _topmostTimer.Start();
@@ -173,6 +187,34 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         return overlay;
     }
 
+    /// <summary>Устройства в порядке пользователя; не упорядоченные им — следом, как пришли от опроса.</summary>
+    private List<DeviceBattery> Ordered(IReadOnlyList<DeviceBattery> devices)
+    {
+        var order = _settings.DeviceOrder;
+        return devices.Select((d, i) => (d, i))
+            .OrderBy(x => order.IndexOf(x.d.Id) is var k && k >= 0 ? k : order.Count + x.i)
+            .Select(x => x.d)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Новый порядок после перетаскивания (на панели задач или в настройках). Видимые устройства — как перетащили,
+    /// остальные подключённые — следом, а сейчас отключённые остаются в списке, чтобы вернуться на своё место.
+    /// </summary>
+    private void SetDeviceOrder(IReadOnlyList<string> ids)
+    {
+        var shown = ids.ToList();
+        var rest = _devices.Select(d => d.Id).Where(id => !shown.Contains(id)).ToList();
+        var absent = _settings.DeviceOrder.Where(id => !shown.Contains(id) && !rest.Contains(id));
+        _settings.DeviceOrder = shown.Concat(rest).Concat(absent).ToList();
+        _settings.Save();
+        Log.Write($"device order: {string.Join(", ", _devices.Where(d => shown.Contains(d.Id)).OrderBy(d => shown.IndexOf(d.Id)).Select(d => d.Name))}");
+        _devices = Ordered(_polled);
+        UpdateTooltip();
+        Redraw();
+        DevicesChanged?.Invoke();
+    }
+
     private void Redraw()
     {
         try
@@ -197,14 +239,15 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         {
             try
             {
-                if (!_overlays.TryGetValue(layout.Handle, out var overlay) || overlay.IsOrphaned || overlay.IsDisposed)
+                if (!_overlays.TryGetValue(layout.Handle, out var overlay) || overlay.IsOrphaned || overlay.IsDetached || overlay.IsDisposed)
                 {
                     // Новая панель задач, или Проводник перезапустился и унёс окно вместе со старой.
                     if (overlay is { IsDisposed: false }) overlay.Dispose();
                     overlay = CreateOverlay();
+                    overlay.Reordered += SetDeviceOrder;
                     _overlays[layout.Handle] = overlay;
                 }
-                overlay.Render(_devices, layout);
+                overlay.Render(_devices, layout.Place(_settings.Position), _settings.Separator);
             }
             catch (Exception ex)
             {
@@ -254,6 +297,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 
     IReadOnlyList<DeviceBattery> ISettingsHost.Devices => _devices;
 
+    void ISettingsHost.SetDeviceOrder(IReadOnlyList<string> ids) => SetDeviceOrder(ids);
+
     IReadOnlyList<TaskbarLayout> ISettingsHost.Layouts => _layouts;
 
     bool ISettingsHost.Autostart
@@ -268,7 +313,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     void ISettingsHost.ApplySettings()
     {
         _settings.Save();
-        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)} hideIcon={_settings.HideAppIcon}");
+        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)} hideIcon={_settings.HideAppIcon} separator={_settings.Separator} position={_settings.Position}");
         _tray.Visible = !_settings.HideAppIcon;
         Redraw();
     }
