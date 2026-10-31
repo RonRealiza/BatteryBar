@@ -7,10 +7,15 @@ internal enum DeviceKind { Mouse, Keyboard, Gamepad, Headset, Other }
 
 internal enum ChargeState { Unknown, Discharging, Charging, Full }
 
+/// <summary>Значок устройства. Порядок — как в меню выбора значка в настройках.</summary>
+internal enum DeviceIcon { Keyboard, Mouse, Headset, Earbuds, Speaker, Gamepad, PlayStation, Xbox, Phone, Watch, Other }
+
 /// <summary>
 /// Снимок заряда одного устройства. Badge — короткая подпись у значка (PS, XB2), чтобы различать однотипные устройства.
+/// Icon — значок, если он точнее типа (вкладыши, колонка) или его выбрал пользователь; иначе — по типу.
 /// </summary>
-internal sealed record DeviceBattery(string Id, string Name, DeviceKind Kind, int? Percent, ChargeState State, string? Badge = null);
+internal sealed record DeviceBattery(string Id, string Name, DeviceKind Kind, int? Percent, ChargeState State, string? Badge = null,
+    DeviceIcon? Icon = null);
 
 internal interface IBatteryProvider
 {

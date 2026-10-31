@@ -67,11 +67,15 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <!-- Те же заполненные значки, что на панели задач (DeviceIcons, сетка 24×24). -->
-                                <Viewbox Width="22" Height="22" VerticalAlignment="Center" Margin="1,0,17,0">
-                                    <Canvas Width="24" Height="24">
-                                        <Path Data="{Binding Icon}" Fill="{DynamicResource TextFillColorPrimaryBrush}" />
-                                    </Canvas>
-                                </Viewbox>
+                                <!-- Щелчок по значку — меню выбора значка. -->
+                                <Border Background="Transparent" Cursor="Hand" CornerRadius="4" Margin="-5,-5,12,-5" Padding="5"
+                                        VerticalAlignment="Center" ToolTip="{x:Static local:L.IconTip}" MouseLeftButtonUp="Icon_Click">
+                                    <Viewbox Width="22" Height="22" Margin="1,0,0,0">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Data="{Binding Icon}" Fill="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
                                     <!-- Название можно поменять: щелчок по нему или по карандашу превращает его в поле ввода. -->
                                     <Grid>
@@ -299,6 +303,47 @@
                         <ComboBoxItem Content="{x:Static local:L.SeparatorGap}" />
                         <ComboBoxItem Content="{x:Static local:L.SeparatorLine}" />
                     </ComboBox>
+                </Grid>
+            </Border>
+
+            <Border x:Name="ChargeCard" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xEBA7;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.ChargeTitle}" />
+                        <TextBlock Style="{StaticResource Secondary}" Text="{x:Static local:L.ChargeHint}" />
+                    </StackPanel>
+                    <ComboBox x:Name="ChargeCombo" Grid.Column="2" MinWidth="220" VerticalAlignment="Center"
+                              SelectionChanged="ChargeCombo_SelectionChanged">
+                        <ComboBoxItem Content="{x:Static local:L.ChargePercent}" />
+                        <ComboBoxItem Content="{x:Static local:L.ChargeBattery}" />
+                        <ComboBoxItem Content="{x:Static local:L.ChargeBoth}" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+            <Border x:Name="ScaleCard" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="52" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource CardGlyph}" Text="&#xE8E9;" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{x:Static local:L.ScaleTitle}" />
+                        <TextBlock Style="{StaticResource Secondary}" Text="{x:Static local:L.ScaleHint}" />
+                    </StackPanel>
+                    <Slider x:Name="ScaleSlider" Grid.Column="2" Minimum="80" Maximum="150" SmallChange="5" LargeChange="10"
+                            TickFrequency="5" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                            ValueChanged="ScaleSlider_ValueChanged" />
+                    <TextBlock x:Name="ScaleValue" Grid.Column="3" VerticalAlignment="Center" TextAlignment="Right"
+                               Style="{StaticResource Secondary}" />
                 </Grid>
             </Border>
 

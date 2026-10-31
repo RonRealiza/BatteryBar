@@ -65,7 +65,8 @@ internal sealed class BluetoothProvider : IBatteryProvider
         {
             if (ReadBattery(group.Key) is not { } percent) continue;
             var endpoint = group.First();
-            result.Add(new DeviceBattery($"bt:{group.Key}", endpoint.Name, KindOf(group), percent, ChargeState.Unknown));
+            var (kind, icon) = KindOf(group, endpoint.Name);
+            result.Add(new DeviceBattery($"bt:{group.Key}", endpoint.Name, kind, percent, ChargeState.Unknown, Icon: icon));
         }
         return result;
     }
@@ -83,33 +84,53 @@ internal sealed class BluetoothProvider : IBatteryProvider
         return null;
     }
 
-    private static DeviceKind KindOf(IEnumerable<DeviceInformation> endpoints)
+    /// <summary>
+    /// Тип устройства и, если он точнее типа, значок. Bluetooth LE сообщает «внешний вид» (Appearance) из спецификации,
+    /// обычный Bluetooth — класс устройства (Class of Device). Вкладыши по классу не отличить от гарнитуры —
+    /// узнаём ещё и по названию.
+    /// </summary>
+    private static (DeviceKind Kind, DeviceIcon? Icon) KindOf(IEnumerable<DeviceInformation> endpoints, string name)
     {
+        bool earbudsByName = name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)
+                             || name.Contains("Buds", StringComparison.OrdinalIgnoreCase)
+                             || name.Contains("Earbud", StringComparison.OrdinalIgnoreCase);
         foreach (var e in endpoints)
         {
-            // Bluetooth LE: «внешний вид» из спецификации (0x03C1 клавиатура, 0x03C2 мышь, 0x03C3–0x03C4 джойстик/геймпад,
-            // 0x0940–0x097F носимое аудио — наушники и гарнитуры).
+            // Bluetooth LE: 0x0040–0x007F телефон, 0x00C0–0x00FF часы, 0x03C1 клавиатура, 0x03C2 мышь,
+            // 0x03C3–0x03C4 джойстик/геймпад, 0x0841 колонка, 0x0940–0x097F носимое аудио (0x0941 — вкладыш).
             if (e.Properties.TryGetValue(AppearanceKey, out var a) && a is ushort appearance && appearance != 0)
             {
-                if (appearance == 0x03C1) return DeviceKind.Keyboard;
-                if (appearance == 0x03C2) return DeviceKind.Mouse;
-                if (appearance is 0x03C3 or 0x03C4) return DeviceKind.Gamepad;
-                if (appearance is >= 0x0940 and <= 0x097F) return DeviceKind.Headset;
+                if (appearance == 0x03C1) return (DeviceKind.Keyboard, null);
+                if (appearance == 0x03C2) return (DeviceKind.Mouse, null);
+                if (appearance is 0x03C3 or 0x03C4) return (DeviceKind.Gamepad, null);
+                if (appearance == 0x0941) return (DeviceKind.Headset, DeviceIcon.Earbuds);
+                if (appearance is >= 0x0940 and <= 0x097F) return (DeviceKind.Headset, earbudsByName ? DeviceIcon.Earbuds : null);
+                if (appearance is >= 0x0840 and <= 0x087F) return (DeviceKind.Other, DeviceIcon.Speaker);
+                if (appearance is >= 0x0040 and <= 0x007F) return (DeviceKind.Other, DeviceIcon.Phone);
+                if (appearance is >= 0x00C0 and <= 0x00FF) return (DeviceKind.Other, DeviceIcon.Watch);
             }
 
-            // Обычный Bluetooth: класс устройства (Class of Device).
+            // Обычный Bluetooth: основной класс 2 — телефон, 4 — аудио/видео, 5 — периферия, 7 — носимое.
             if (e.Properties.TryGetValue(CodMajorKey, out var mj) && mj is byte major)
             {
-                if (major == 4) return DeviceKind.Headset; // аудио/видео
-                if (major == 5 && e.Properties.TryGetValue(CodMinorKey, out var mn) && mn is byte minor)
+                byte minor = e.Properties.TryGetValue(CodMinorKey, out var mn) && mn is byte m ? m : (byte)0;
+                if (major == 2) return (DeviceKind.Other, DeviceIcon.Phone);
+                if (major == 4)
                 {
-                    if ((minor & 0x0F) is 1 or 2) return DeviceKind.Gamepad;
-                    if ((minor & 0x30) == 0x20) return DeviceKind.Mouse;
-                    if ((minor & 0x30) == 0x10) return DeviceKind.Keyboard;
+                    // Подкласс аудио: 5 — громкоговоритель, 7 — портативное аудио (колонки тоже так называют себя).
+                    if (minor is 5 or 7 && !earbudsByName) return (DeviceKind.Other, DeviceIcon.Speaker);
+                    return (DeviceKind.Headset, earbudsByName ? DeviceIcon.Earbuds : null);
                 }
+                if (major == 5)
+                {
+                    if ((minor & 0x0F) is 1 or 2) return (DeviceKind.Gamepad, null);
+                    if ((minor & 0x30) == 0x20) return (DeviceKind.Mouse, null);
+                    if ((minor & 0x30) == 0x10) return (DeviceKind.Keyboard, null);
+                }
+                if (major == 7 && minor == 1) return (DeviceKind.Other, DeviceIcon.Watch);
             }
         }
-        return DeviceKind.Other;
+        return (earbudsByName ? DeviceKind.Headset : DeviceKind.Other, earbudsByName ? DeviceIcon.Earbuds : null);
     }
 
     private static T? Prop<T>(DeviceInformation info, string key) =>

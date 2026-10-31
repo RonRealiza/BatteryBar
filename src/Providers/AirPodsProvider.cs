@@ -63,7 +63,7 @@ internal sealed class AirPodsProvider : IBatteryProvider, IDisposable
         string details = string.Join(", ", new[] { Part("L", pods.Left), Part("R", pods.Right), Part(L.CaseLabel, pods.Case) }
             .Where(s => s.Length > 0));
         var state = pods.Charging ? ChargeState.Charging : ChargeState.Discharging;
-        return new[] { new DeviceBattery($"airpods:{name}", $"{name} ({details})", DeviceKind.Headset, percent, state) };
+        return new[] { new DeviceBattery($"airpods:{name}", $"{name} ({details})", DeviceKind.Headset, percent, state, Icon: IconFor(name)) };
     }
 
     private void OnReceived(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
@@ -123,4 +123,11 @@ internal sealed class AirPodsProvider : IBatteryProvider, IDisposable
         _watcher.Received -= OnReceived;
         if (_watcher.Status == BluetoothLEAdvertisementWatcherStatus.Started) _watcher.Stop();
     }
+
+    /// <summary>AirPods и Beats-вкладыши — значок вкладышей; накладные (AirPods Max, Beats Studio/Solo) — гарнитуры.</summary>
+    private static DeviceIcon? IconFor(string name) =>
+        name.Contains("Max", StringComparison.OrdinalIgnoreCase) || name.Contains("Studio", StringComparison.OrdinalIgnoreCase)
+        || name.Contains("Solo", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : DeviceIcon.Earbuds;
 }

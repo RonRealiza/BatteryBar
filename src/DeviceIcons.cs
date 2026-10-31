@@ -16,32 +16,32 @@ internal static class DeviceIcons
 {
     private const float Grid = 24f;
 
-    private enum Shape { Mouse, Keyboard, Headset, Gamepad, PlayStation, Xbox, Other }
-
     /// <summary>Нарисовать значок устройства в квадрате size×size с левым верхним углом (x, y).</summary>
     public static void Draw(Graphics g, DeviceBattery device, float x, float y, float size, Brush brush) =>
-        Draw(g, ShapeOf(device), x, y, size, brush);
+        Draw(g, IconOf(device), x, y, size, brush);
 
     /// <summary>
+    /// Значок устройства: выбранный пользователем или подсказанный модулем (вкладыши, колонка), иначе — по типу.
     /// У геймпадов свой значок для PlayStation и Xbox: по подписи у значка (PS, PS4, XB…), а у Bluetooth-геймпадов
     /// без подписи — по названию.
     /// </summary>
-    private static Shape ShapeOf(DeviceBattery d)
+    public static DeviceIcon IconOf(DeviceBattery d)
     {
+        if (d.Icon is { } chosen) return chosen;
         switch (d.Kind)
         {
-            case DeviceKind.Mouse: return Shape.Mouse;
-            case DeviceKind.Keyboard: return Shape.Keyboard;
-            case DeviceKind.Headset: return Shape.Headset;
+            case DeviceKind.Mouse: return DeviceIcon.Mouse;
+            case DeviceKind.Keyboard: return DeviceIcon.Keyboard;
+            case DeviceKind.Headset: return DeviceIcon.Headset;
             case DeviceKind.Gamepad:
                 string badge = d.Badge ?? "", name = d.Name;
                 if (badge.StartsWith("PS") || name.Contains("DualSense", System.StringComparison.OrdinalIgnoreCase)
                     || name.Contains("DualShock", System.StringComparison.OrdinalIgnoreCase))
-                    return Shape.PlayStation;
+                    return DeviceIcon.PlayStation;
                 if (badge.StartsWith("XB") || name.Contains("Xbox", System.StringComparison.OrdinalIgnoreCase))
-                    return Shape.Xbox;
-                return Shape.Gamepad;
-            default: return Shape.Other;
+                    return DeviceIcon.Xbox;
+                return DeviceIcon.Gamepad;
+            default: return DeviceIcon.Other;
         }
     }
 
@@ -50,7 +50,7 @@ internal static class DeviceIcons
     /// </summary>
     public static void SavePreview(string file)
     {
-        var shapes = (Shape[])System.Enum.GetValues(typeof(Shape));
+        var shapes = (DeviceIcon[])System.Enum.GetValues(typeof(DeviceIcon));
         int[] sizes = { 96, 48, 24, 20, 16 };
         int cell = 110, w = cell * sizes.Length, h = cell * (shapes.Length + 1); // последняя строка — молния зарядки
         using var bmp = new Bitmap(w, h * 2);
@@ -76,7 +76,7 @@ internal static class DeviceIcons
         bmp.Save(file, System.Drawing.Imaging.ImageFormat.Png);
     }
 
-    private static void Draw(Graphics g, Shape shape, float x, float y, float size, Brush brush)
+    private static void Draw(Graphics g, DeviceIcon shape, float x, float y, float size, Brush brush)
     {
         var state = g.Save();
         g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -89,21 +89,27 @@ internal static class DeviceIcons
         g.Restore(state);
     }
 
-    private static GraphicsPath PathOf(Shape shape) => shape switch
+    private static GraphicsPath PathOf(DeviceIcon shape) => shape switch
     {
-        Shape.Mouse => Mouse(),
-        Shape.Keyboard => Keyboard(),
-        Shape.Headset => Headset(),
-        Shape.Gamepad => Svg("gamepad-other"),
-        Shape.PlayStation => Svg("gamepad-ps"),
-        Shape.Xbox => Svg("gamepad-xbox"),
+        DeviceIcon.Mouse => Mouse(),
+        DeviceIcon.Keyboard => Keyboard(),
+        DeviceIcon.Headset => Headset(),
+        DeviceIcon.Earbuds => Earbuds(),
+        DeviceIcon.Speaker => Speaker(),
+        DeviceIcon.Gamepad => Svg("gamepad-other"),
+        DeviceIcon.PlayStation => Svg("gamepad-ps"),
+        DeviceIcon.Xbox => Svg("gamepad-xbox"),
+        DeviceIcon.Phone => Phone(),
+        DeviceIcon.Watch => Watch(),
         _ => Other(),
     };
 
     /// <summary>Тот же значок для WPF (окно настроек) — векторный, на сетке 24×24.</summary>
-    public static System.Windows.Media.Geometry Geometry(DeviceBattery device)
+    public static System.Windows.Media.Geometry Geometry(DeviceBattery device) => Geometry(IconOf(device));
+
+    public static System.Windows.Media.Geometry Geometry(DeviceIcon icon)
     {
-        using var path = PathOf(ShapeOf(device));
+        using var path = PathOf(icon);
         return ToWpf(path);
     }
 
@@ -320,6 +326,57 @@ internal static class DeviceIcons
         }
         p.AddPath(RoundedRect(1.6f, 12.2f, 6.4f, 9.6f, 2.4f), false);
         p.AddPath(RoundedRect(16f, 12.2f, 6.4f, 9.6f, 2.4f), false);
+        return p;
+    }
+
+    /// <summary>Вкладыши: два наушника-«капли» с ножками, как AirPods.</summary>
+    private static GraphicsPath Earbuds()
+    {
+        // Головка и ножка перекрываются — заливка «по ненулевому».
+        var p = new GraphicsPath(FillMode.Winding);
+        foreach (float x in new[] { 2.2f, 13.4f })
+        {
+            p.AddEllipse(x, 2.5f, 8.4f, 8.4f);
+            p.AddPath(Capsule(x + 4.6f, 6f, 3.2f, 15.5f), false);
+        }
+        return p;
+    }
+
+    /// <summary>Колонка: корпус с вырезанными динамиками — большим (с колпачком) и маленьким.</summary>
+    private static GraphicsPath Speaker()
+    {
+        var p = new GraphicsPath(FillMode.Alternate);
+        p.AddPath(RoundedRect(4.5f, 1.5f, 15f, 21f, 3.2f), false);
+        p.AddEllipse(7.2f, 10.2f, 9.6f, 9.6f);
+        p.AddEllipse(10.4f, 13.4f, 3.2f, 3.2f);
+        p.AddEllipse(10.2f, 4.2f, 3.6f, 3.6f);
+        return p;
+    }
+
+    /// <summary>Телефон: корпус с вырезанным экраном и «челкой» динамика.</summary>
+    private static GraphicsPath Phone()
+    {
+        var p = new GraphicsPath(FillMode.Alternate);
+        p.AddPath(RoundedRect(5.5f, 1.2f, 13f, 21.6f, 3f), false);
+        p.AddPath(RoundedRect(7.3f, 5f, 9.4f, 14f, 1.2f), false);
+        p.AddPath(RoundedRect(10f, 2.7f, 4f, 1.3f, 0.65f), false);
+        return p;
+    }
+
+    /// <summary>Часы: ремешок, корпус с вырезанным циферблатом и стрелками, коронка сбоку.</summary>
+    private static GraphicsPath Watch()
+    {
+        var p = new GraphicsPath(FillMode.Winding);
+        p.AddPath(RoundedRect(8f, 0.8f, 8f, 6f, 1.6f), false);
+        p.AddPath(RoundedRect(8f, 17.2f, 8f, 6f, 1.6f), false);
+        p.AddPath(RoundedRect(4.5f, 4.5f, 15f, 15f, 4f), false);
+        p.AddPath(RoundedRect(19f, 10f, 1.8f, 4f, 0.7f), false);
+        // Циферблат — вырез: в «ненулевой» заливке дырку даёт контур в обратную сторону.
+        var face = RoundedRect(6.6f, 6.6f, 10.8f, 10.8f, 2.6f);
+        face.Reverse();
+        p.AddPath(face, false);
+        p.AddPath(RoundedRect(11.2f, 8.4f, 1.6f, 4.4f, 0.8f), false);
+        p.AddPath(RoundedRect(11.2f, 11.2f, 3.8f, 1.6f, 0.8f), false);
         return p;
     }
 

@@ -38,6 +38,9 @@ internal interface ISettingsHost
     /// <summary>Своё название устройства; пустое — вернуть исходное.</summary>
     void RenameDevice(string id, string? name);
 
+    /// <summary>Свой значок устройства; null — подбирать автоматически.</summary>
+    void SetDeviceIcon(string id, DeviceIcon? icon);
+
     /// <summary>Язык сменился: применить его и переоткрыть окно настроек уже на новом языке.</summary>
     void LanguageChanged();
 
@@ -65,6 +68,9 @@ internal partial class SettingsWindow : Window
         _loading = true;
         DisplayCombo.SelectedIndex = (int)host.Settings.Display;
         SeparatorCombo.SelectedIndex = (int)host.Settings.Separator;
+        ChargeCombo.SelectedIndex = (int)host.Settings.Charge;
+        ScaleSlider.Value = host.Settings.IconScale;
+        ScaleValue.Text = $"{host.Settings.IconScale}%";
         PositionCombo.SelectedIndex = (int)host.Settings.Position;
         UpdateOffsetRow();
         LanguageCombo.SelectedIndex = (int)host.Settings.Language;
@@ -298,6 +304,40 @@ internal partial class SettingsWindow : Window
         DevicesList.CaptureMouse();
     }
 
+    /// <summary>Меню выбора значка: «Автоматически» и все значки программы, текущий выбор отмечен.</summary>
+    private void Icon_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement target || target.DataContext is not DeviceRow row) return;
+        _host.Settings.CustomIcons.TryGetValue(row.Id, out var chosen);
+        bool custom = _host.Settings.CustomIcons.ContainsKey(row.Id);
+        var fg = TryFindResource("TextFillColorPrimaryBrush") as Brush ?? Brushes.Black;
+
+        var menu = new ContextMenu { PlacementTarget = target, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        var auto = new MenuItem { Header = L.IconAuto, IsCheckable = true, IsChecked = !custom };
+        auto.Click += (_, _) => _host.SetDeviceIcon(row.Id, null);
+        menu.Items.Add(auto);
+        menu.Items.Add(new Separator());
+        foreach (DeviceIcon icon in Enum.GetValues(typeof(DeviceIcon)))
+        {
+            var item = new MenuItem
+            {
+                Header = L.IconName(icon),
+                IsCheckable = true,
+                IsChecked = custom && chosen == icon,
+                Icon = new Viewbox
+                {
+                    Width = 16,
+                    Height = 16,
+                    Child = new Canvas { Width = 24, Height = 24, Children = { new System.Windows.Shapes.Path { Data = DeviceIcons.Geometry(icon), Fill = fg } } },
+                },
+            };
+            item.Click += (_, _) => _host.SetDeviceIcon(row.Id, icon);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
     // Переименование: щелчок по названию — поле ввода на его месте. Enter или уход фокуса — сохранить, Esc — отменить.
     private TextBox? _editing;
 
@@ -430,6 +470,11 @@ internal partial class SettingsWindow : Window
         SeparatorCard.Opacity = SeparatorCard.IsEnabled ? 1 : 0.5;
         PositionCard.IsEnabled = _host.Settings.ShowOnTaskbar;
         PositionCard.Opacity = PositionCard.IsEnabled ? 1 : 0.5;
+        foreach (var card in new[] { ChargeCard, ScaleCard })
+        {
+            card.IsEnabled = _host.Settings.ShowOnTaskbar;
+            card.Opacity = card.IsEnabled ? 1 : 0.5;
+        }
         MonitorChecks.IsEnabled = _host.Settings.Monitors == MonitorMode.Selected;
     }
 
@@ -439,6 +484,26 @@ internal partial class SettingsWindow : Window
         _host.Settings.Display = (DisplayMode)DisplayCombo.SelectedIndex;
         _host.ApplySettings();
         UpdateEnabledState();
+    }
+
+    private void ChargeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || ChargeCombo.SelectedIndex < 0) return;
+        _host.Settings.Charge = (ChargeDisplay)ChargeCombo.SelectedIndex;
+        _host.ApplySettings();
+    }
+
+    // Как и отступ: пока тянут — только перерисовка, сохраняем, когда ползунок оставили в покое.
+    private void ScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (ScaleValue == null) return; // ещё строится окно
+        int value = (int)Math.Round(e.NewValue);
+        ScaleValue.Text = $"{value}%";
+        if (_loading) return;
+        _host.Settings.IconScale = value;
+        _host.Preview();
+        _saveOffset.Stop();
+        _saveOffset.Start();
     }
 
     private void PositionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

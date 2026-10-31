@@ -43,6 +43,22 @@ public static class L
     public static string SettingsTitle => T("BatteryBar — настройки", "BatteryBar — settings");
     public static string AppSubtitle => T("Заряд беспроводных устройств на панели задач Windows", "Battery levels of your wireless devices on the Windows taskbar");
     public static string DevicesHeader => T("Устройства", "Devices");
+    public static string IconTip => T("Выбрать значок", "Choose an icon");
+    public static string IconAuto => T("Автоматически", "Automatic");
+    internal static string IconName(DeviceIcon icon) => icon switch
+    {
+        DeviceIcon.Keyboard => T("Клавиатура", "Keyboard"),
+        DeviceIcon.Mouse => T("Мышь", "Mouse"),
+        DeviceIcon.Headset => T("Гарнитура", "Headset"),
+        DeviceIcon.Earbuds => T("Вкладыши", "Earbuds"),
+        DeviceIcon.Speaker => T("Колонка", "Speaker"),
+        DeviceIcon.Gamepad => T("Геймпад", "Gamepad"),
+        DeviceIcon.PlayStation => T("Геймпад PlayStation", "PlayStation controller"),
+        DeviceIcon.Xbox => T("Геймпад Xbox", "Xbox controller"),
+        DeviceIcon.Phone => T("Телефон", "Phone"),
+        DeviceIcon.Watch => T("Часы", "Watch"),
+        _ => T("Другое", "Other"),
+    };
     public static string RenameTip => T("Переименовать. Пустое название — вернуть исходное", "Rename. Leave empty to restore the original name");
     public static string NoDevices => T("Подключённых устройств не найдено. Включите мышь, клавиатуру, гарнитуру или геймпад — они появятся здесь в течение нескольких секунд.",
         "No connected devices found. Turn on your mouse, keyboard, headset or gamepad — they will show up here within a few seconds.");
@@ -78,6 +94,13 @@ public static class L
     public static string PositionBeforeStart => T("Слева от «Пуска»", "Left of Start");
     public static string PositionAfterApps => T("Справа от приложений", "Right of the apps");
     public static string PositionBeforeTray => T("Слева от трея", "Left of the tray");
+    public static string ChargeTitle => T("Как показывать заряд", "Battery display");
+    public static string ChargeHint => T("Батарейка во время зарядки «наполняется», при 20% и ниже — красная", "The battery fills up while charging and turns red at 20% and below");
+    public static string ChargePercent => T("Проценты", "Percentage");
+    public static string ChargeBattery => T("Батарейка", "Battery");
+    public static string ChargeBoth => T("Батарейка и проценты", "Battery and percentage");
+    public static string ScaleTitle => T("Размер значков и текста", "Icon and text size");
+    public static string ScaleHint => T("На панели задач", "On the taskbar");
     public static string SeparatorTitle => T("Разделитель между устройствами", "Separator between devices");
     public static string SeparatorHint => T("Как отделять устройства друг от друга на панели задач", "How devices are set apart on the taskbar");
     public static string SeparatorGap => T("Отступ", "Space");

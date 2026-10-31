@@ -24,7 +24,7 @@
 - **Or in the tray.** Each device can get its own tray icon with the charge level — or use both at once.
 - **Charging and low battery at a glance.** A green bolt while charging; the percentage turns red at 20% and below.
 - **Devices come and go automatically.** A device appears when it is turned on and disappears when it is turned off. A sleeping mouse keeps its last known level instead of blinking.
-- **Make it yours.** Six positions on the taskbar (after the weather, next to Start, after the apps, next to the tray, or centered), a space or a line between devices, device order by dragging — right on the taskbar or in Settings — and your own device names. Devices appear and disappear with a smooth animation.
+- **Make it yours.** Six positions on the taskbar (after the weather, next to Start, after the apps, next to the tray, or centered), a space or a line between devices, device order by dragging — right on the taskbar or in Settings — your own device names and icons, the charge as a number or a battery with bars, and the size of icons and text. Devices appear and disappear with a smooth animation.
 - **Several gamepads.** Gamepads are labelled PS / PS4 / XB, with a number if you have two of the same kind.
 - **Windows 11 look.** Settings window and tray menu in the native Fluent style, light or dark — follows your Windows theme.
 - **English and Russian.** Picks your system language by default.

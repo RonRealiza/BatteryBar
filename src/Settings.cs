@@ -14,6 +14,9 @@ internal enum DisplayMode { Taskbar, Tray, Both }
 /// <summary>Чем разделять устройства на панели задач.</summary>
 internal enum SeparatorStyle { Gap, Line }
 
+/// <summary>Как показывать заряд на панели задач: числом, батарейкой с тремя делениями или и тем и другим.</summary>
+internal enum ChargeDisplay { Percent, Battery, Both }
+
 /// <summary>
 /// Где на панели задач стоит блок. Слева от «Пуска»: сразу за погодой, посередине или вплотную к «Пуску».
 /// Справа: сразу за приложениями, посередине или вплотную к трею. Порядок — как в списке настроек.
@@ -43,6 +46,11 @@ internal sealed class Settings
 
     public SeparatorStyle Separator { get; set; } = SeparatorStyle.Gap;
 
+    public ChargeDisplay Charge { get; set; } = ChargeDisplay.Percent;
+
+    /// <summary>Размер значков и текста на панели задач, в процентах от обычного (80–150).</summary>
+    public int IconScale { get; set; } = 100;
+
     public TaskbarPosition Position { get; set; } = TaskbarPosition.AfterWidgets;
 
     /// <summary>Дополнительный отступ (пиксели при 100% масштабе) от погоды — для положения «справа от погоды».</summary>
@@ -68,6 +76,9 @@ internal sealed class Settings
 
     /// <summary>Свои названия устройств (Id → название), например «Cobra Pro» вместо «Razer Mouse Dock Pro».</summary>
     public Dictionary<string, string> CustomNames { get; set; } = new();
+
+    /// <summary>Значки, выбранные пользователем (Id → значок), — для устройств, которым программа не подобрала подходящий.</summary>
+    public Dictionary<string, DeviceIcon> CustomIcons { get; set; } = new();
 
     /// <summary>Имена дисплеев (\\.\DISPLAY2) для режима Selected.</summary>
     public List<string> SelectedMonitors { get; set; } = new();

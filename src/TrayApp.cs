@@ -198,6 +198,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
         return devices.Select((d, i) => (d, i))
             .OrderBy(x => order.IndexOf(x.d.Id) is var k && k >= 0 ? k : order.Count + x.i)
             .Select(x => _settings.CustomNames.TryGetValue(x.d.Id, out var name) ? x.d with { Name = name } : x.d)
+            .Select(d => _settings.CustomIcons.TryGetValue(d.Id, out var icon) ? d with { Icon = icon } : d)
             .ToList();
     }
 
@@ -268,7 +269,8 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
                     overlay.Reordered += SetDeviceOrder;
                     _overlays[layout.Handle] = overlay;
                 }
-                overlay.Render(_devices, layout.Place(_settings.Position, _settings.EdgeOffset), _settings.Separator);
+                overlay.Render(_devices, layout.Place(_settings.Position, _settings.EdgeOffset),
+                    new OverlayStyle(_settings.Separator, _settings.Charge, _settings.IconScale / 100f));
             }
             catch (Exception ex)
             {
@@ -322,6 +324,18 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
 
     void ISettingsHost.RenameDevice(string id, string? name) => RenameDevice(id, name);
 
+    /// <summary>Свой значок устройства; null — снова подбирать автоматически.</summary>
+    void ISettingsHost.SetDeviceIcon(string id, DeviceIcon? icon)
+    {
+        if (icon is { } chosen) _settings.CustomIcons[id] = chosen;
+        else _settings.CustomIcons.Remove(id);
+        _settings.Save();
+        Log.Write($"device icon: {_polled.FirstOrDefault(d => d.Id == id)?.Name} -> {(icon?.ToString() ?? "auto")}");
+        _devices = Ordered(_polled);
+        Redraw();
+        DevicesChanged?.Invoke();
+    }
+
     IReadOnlyList<TaskbarLayout> ISettingsHost.Layouts => _layouts;
 
     bool ISettingsHost.Autostart
@@ -336,7 +350,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
     void ISettingsHost.ApplySettings()
     {
         _settings.Save();
-        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)} hideIcon={_settings.HideAppIcon} separator={_settings.Separator} position={_settings.Position} offset={_settings.EdgeOffset}");
+        Log.Write($"settings: display={_settings.Display} monitors={_settings.Monitors} {string.Join(",", _settings.SelectedMonitors)} hideIcon={_settings.HideAppIcon} separator={_settings.Separator} position={_settings.Position} offset={_settings.EdgeOffset} charge={_settings.Charge} scale={_settings.IconScale}");
         _tray.Visible = !_settings.HideAppIcon;
         Redraw();
     }

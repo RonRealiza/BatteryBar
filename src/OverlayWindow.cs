@@ -13,6 +13,9 @@ namespace BatteryBar;
 /// мышь проходит сквозь пустые места, а устройства можно перетаскивать; фокус не забирает. Будучи дочерним, оно всегда в одном слое с панелью —
 /// не прячется под неё при клике и при открытом «Пуске».
 /// </summary>
+/// <summary>Оформление блока из настроек: разделитель, вид заряда, размер (1 = обычный).</summary>
+internal sealed record OverlayStyle(SeparatorStyle Separator, ChargeDisplay Charge, float Scale);
+
 internal sealed class OverlayWindow : Form
 {
     private const char GlyphMouse = '';
@@ -34,6 +37,7 @@ internal sealed class OverlayWindow : Form
         StartPosition = FormStartPosition.Manual;
         Text = "BatteryBar";
         _frames.Tick += OnFrame;
+        _chargeTimer.Tick += OnChargeTick;
     }
 
     protected override void Dispose(bool disposing)
@@ -41,6 +45,7 @@ internal sealed class OverlayWindow : Form
         if (disposing)
         {
             _frames.Dispose();
+            _chargeTimer.Dispose();
             _scene?.Dispose();
         }
         base.Dispose(disposing);
@@ -105,7 +110,8 @@ internal sealed class OverlayWindow : Form
         private static float Ease(double t) => (float)(t * t * (3 - 2 * t));
     }
 
-    private sealed record Scene(TaskbarLayout Layout, float S, Palette Colors, Fonts Fonts, float Gap, SeparatorStyle Separator) : IDisposable
+    private sealed record Scene(TaskbarLayout Layout, float S, Palette Colors, Fonts Fonts, float Gap, SeparatorStyle Separator,
+        ChargeDisplay Charge) : IDisposable
     {
         public void Dispose()
         {
@@ -114,7 +120,7 @@ internal sealed class OverlayWindow : Form
         }
     }
 
-    public void Render(IReadOnlyList<DeviceBattery> devices, TaskbarLayout? layout, SeparatorStyle separator)
+    public void Render(IReadOnlyList<DeviceBattery> devices, TaskbarLayout? layout, OverlayStyle style)
     {
         if (layout == null || layout.SlotEnd - layout.SlotStart < 20)
         {
@@ -124,10 +130,14 @@ internal sealed class OverlayWindow : Form
             return;
         }
 
-        float s = layout.Dpi / 96f;
+        // Масштаб — от DPI монитора и размера, выбранного в настройках; значок не больше толщины панели.
+        int across = layout.Vertical ? layout.Taskbar.Width : layout.Taskbar.Height;
+        float s = layout.Dpi / 96f * Math.Clamp(style.Scale, 0.8f, 1.5f);
+        s = Math.Min(s, across / 26f);
         // На вертикальной панели ширина всего ~48 px — текст чуть мельче, чтобы «100%» поместилось.
         float iconSize = (layout.Vertical ? 19 : 20) * s;
         float boltH = (layout.Vertical ? 11 : 13) * s;
+        float batteryH = (layout.Vertical ? 13 : 16) * s;
         var textFont = new Font(TextFontName, (layout.Vertical ? 12 : 14) * s, GraphicsUnit.Pixel);
         var badgeFont = new Font(TextFontName, (layout.Vertical ? 9 : 10.5f) * s, FontStyle.Bold, GraphicsUnit.Pixel);
         var fmt = StringFormat.GenericTypographic;
@@ -142,13 +152,25 @@ internal sealed class OverlayWindow : Form
             foreach (var d in devices)
             {
                 string text = d.Percent is { } p ? $"{p}%" : "—";
+                float textW = Width(text, textFont);
+                // С батарейкой молния не нужна: зарядку показывают бегущие деления.
+                float boltW = style.Charge == ChargeDisplay.Percent && d.State == ChargeState.Charging
+                    ? boltH * DeviceIcons.BoltAspect + 2 * s : 0;
+                float batteryW = batteryH * BatteryAspect;
+                float contentW = style.Charge switch
+                {
+                    ChargeDisplay.Battery => batteryW,
+                    ChargeDisplay.Both => batteryW + 5 * s + textW,
+                    _ => textW + boltW,
+                };
                 measured.Add(new Item(
                     d,
                     text,
                     iconSize,
                     d.Badge is { Length: > 0 } badge ? Width(badge, badgeFont) + 2 * s : 0,
-                    Width(text, textFont),
-                    d.State == ChargeState.Charging ? boltH * DeviceIcons.BoltAspect + 2 * s : 0));
+                    textW,
+                    boltW,
+                    contentW));
             }
             moreW = Width($"+{devices.Count}", textFont); // самый длинный вариант, чтобы место точно хватило
         }
@@ -163,12 +185,13 @@ internal sealed class OverlayWindow : Form
         }
         _scene?.Dispose();
         float gap = (layout.Vertical ? 14 : 20) * s;
-        _scene = new Scene(layout, s, new Palette(layout.LightTheme), new Fonts(iconSize, boltH, textFont, badgeFont, fmt), gap, separator);
+        _scene = new Scene(layout, s, new Palette(layout.LightTheme), new Fonts(iconSize, boltH, textFont, badgeFont, fmt, batteryH),
+            gap, style.Separator, style.Charge);
 
         // Длина устройства вдоль панели: у горизонтальной — ширина строки, у вертикальной — две строки.
         var lengths = measured.Select(it => layout.Vertical
             ? (VIconRow + VTextRow) * s
-            : it.IconW + (it.BadgeW > 0 ? it.BadgeW + 1 * s : 0) + 5 * s + it.TextW + it.BoltW).ToList();
+            : it.IconW + (it.BadgeW > 0 ? it.BadgeW + 1 * s : 0) + 5 * s + it.ContentW).ToList();
         float moreLen = layout.Vertical ? VMoreRow * s : moreW;
         float avail = layout.SlotEnd - layout.SlotStart - 2 * Pad * s;
 
@@ -204,6 +227,21 @@ internal sealed class OverlayWindow : Form
         Merge(wanted);
         Draw();
         EnsureFrames();
+
+        // Батарейка у заряжающегося устройства «наполняется» — нужен свой неспешный таймер.
+        bool animate = style.Charge != ChargeDisplay.Percent && devices.Any(d => d.State == ChargeState.Charging);
+        if (animate && !_chargeTimer.Enabled) _chargeTimer.Start();
+        else if (!animate) _chargeTimer.Stop();
+    }
+
+    // Шаг анимации зарядки: каждые полсекунды загорается следующее деление.
+    private readonly System.Windows.Forms.Timer _chargeTimer = new() { Interval = 500 };
+    private int _chargePhase;
+
+    private void OnChargeTick(object? sender, EventArgs e)
+    {
+        _chargePhase++;
+        if (!_frames.Enabled) PaintFrame(); // идёт обычная анимация — кадр и так скоро перерисуется
     }
 
     private bool Moving => _drag != null || _grab > 0 || _slots.Any(sl =>
@@ -287,12 +325,16 @@ internal sealed class OverlayWindow : Form
     private const float Pad = 2;
     private const float VIconRow = 22, VTextRow = 17, VMoreRow = 15;
 
-    private sealed record Item(DeviceBattery Dev, string Text, float IconW, float BadgeW, float TextW, float BoltW)
+    /// <summary>ContentW — ширина того, что справа от значка: процент с молнией, батарейка или батарейка с процентом.</summary>
+    private sealed record Item(DeviceBattery Dev, string Text, float IconW, float BadgeW, float TextW, float BoltW, float ContentW)
     {
         public bool IsLow => Dev.Percent is <= 20 && Dev.State != ChargeState.Charging;
     }
 
-    private sealed record Fonts(float IconSize, float BoltH, Font Text, Font Badge, StringFormat Format);
+    private sealed record Fonts(float IconSize, float BoltH, Font Text, Font Badge, StringFormat Format, float BatteryH);
+
+    // Батарейка: ширина к высоте.
+    private const float BatteryAspect = 0.56f;
 
     private sealed record Palette(bool Light)
     {
@@ -617,7 +659,7 @@ internal sealed class OverlayWindow : Form
     }
 
     /// <summary>Горизонтальная панель: значок, подпись, процент, молния — в строку.</summary>
-    private static void DrawHorizontal(Graphics g, Slot slot, float x, int height, Scene sc)
+    private void DrawHorizontal(Graphics g, Slot slot, float x, int height, Scene sc)
     {
         float s = sc.S, a = slot.Opacity;
         var c = sc.Colors;
@@ -639,6 +681,12 @@ internal sealed class OverlayWindow : Form
             cx += it.BadgeW + 1 * s;
         }
         cx += 5 * s;
+        if (sc.Charge != ChargeDisplay.Percent)
+        {
+            DrawBattery(g, it, cx, height / 2f, sc, a);
+            if (sc.Charge == ChargeDisplay.Battery) return;
+            cx += f.BatteryH * BatteryAspect + 5 * s;
+        }
         DrawCentered(g, it.Text, f.Text, brush, cx, height, f.Format);
         if (it.BoltW > 0)
         {
@@ -647,8 +695,49 @@ internal sealed class OverlayWindow : Form
         }
     }
 
+    /// <summary>
+    /// Вертикальная батарейка с тремя делениями (больше 66% — три, больше 33% — два, иначе одно). При 20% и ниже — красная.
+    /// Во время зарядки деления зелёные и по очереди загораются снизу вверх, начиная с текущего уровня.
+    /// </summary>
+    private void DrawBattery(Graphics g, Item it, float x, float centerY, Scene sc, float opacity)
+    {
+        float s = sc.S, h = sc.Fonts.BatteryH, w = h * BatteryAspect;
+        var c = sc.Colors;
+        bool charging = it.Dev.State == ChargeState.Charging;
+        var outline = Fade(it.IsLow ? c.Low : c.Fg, opacity);
+        var fill = Fade(charging ? c.Charge : it.IsLow ? c.Low : c.Fg, opacity);
+
+        float capH = Math.Max(1.5f, h * 0.11f), stroke = Math.Max(1f, 1.3f * s);
+        float top = centerY - h / 2, bodyTop = top + capH;
+        var body = new RectangleF(x + stroke / 2, bodyTop + stroke / 2, w - stroke, h - capH - stroke);
+        using (var pen = new Pen(outline, stroke))
+        using (var path = RoundedRect(body, Math.Min(2.2f * s, body.Width / 3)))
+            g.DrawPath(pen, path);
+        using (var cap = new SolidBrush(outline))
+            g.FillRectangle(cap, x + w * 0.3f, top, w * 0.4f, capH + stroke / 2);
+
+        int level = it.Dev.Percent switch { null => 0, > 66 => 3, > 33 => 2, > 0 => 1, _ => 0 };
+        int lit = level;
+        if (charging)
+        {
+            // Хотя бы одно деление «бежит», даже когда батарея почти полная.
+            int from = Math.Min(level, 2);
+            lit = from + _chargePhase % (4 - from);
+        }
+
+        float inset = stroke + Math.Max(1f, 1.1f * s), segGap = Math.Max(1f, 1.1f * s);
+        float innerTop = body.Top + inset - stroke / 2, innerBottom = body.Bottom - inset + stroke / 2;
+        float segH = (innerBottom - innerTop - 2 * segGap) / 3;
+        using var segBrush = new SolidBrush(fill);
+        for (int i = 0; i < lit; i++)
+        {
+            float bottom = innerBottom - i * (segH + segGap);
+            g.FillRectangle(segBrush, body.Left + inset - stroke / 2, bottom - segH, body.Width - 2 * inset + stroke, segH);
+        }
+    }
+
     /// <summary>Вертикальная панель (сбоку): у каждого устройства две строки — значок с подписью и процент.</summary>
-    private static void DrawVertical(Graphics g, Slot slot, float y, int width, Scene sc)
+    private void DrawVertical(Graphics g, Slot slot, float y, int width, Scene sc)
     {
         float s = sc.S, a = slot.Opacity;
         float iconRow = VIconRow * s, textRow = VTextRow * s;
@@ -674,9 +763,15 @@ internal sealed class OverlayWindow : Form
             DrawInRow(g, it.Dev.Badge!, f.Badge, badgeBrush, x1 + it.IconW + 2 * s, y, iconRow, f.Format);
         }
 
-        // Строка 2: процент (+ молния), по центру панели.
-        float row2 = it.TextW + it.BoltW;
+        // Строка 2: процент (+ молния), батарейка или батарейка с процентом — по центру панели.
+        float row2 = it.ContentW;
         float x2 = (width - row2) / 2f;
+        if (sc.Charge != ChargeDisplay.Percent)
+        {
+            DrawBattery(g, it, x2, y + iconRow + textRow / 2, sc, a);
+            if (sc.Charge == ChargeDisplay.Battery) return;
+            x2 += f.BatteryH * BatteryAspect + 5 * s;
+        }
         DrawInRow(g, it.Text, f.Text, brush, x2, y + iconRow, textRow, f.Format);
         if (it.BoltW > 0)
         {
