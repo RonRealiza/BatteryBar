@@ -112,6 +112,8 @@ internal sealed class RazerProvider : IBatteryProvider
         }
 
         outcome = "busy";
+        int foreign = 0;
+        bool resent = false;
         for (int attempt = 0; attempt < 10; attempt++)
         {
             Thread.Sleep(attempt == 0 ? 20 : 50);
@@ -127,7 +129,17 @@ internal sealed class RazerProvider : IBatteryProvider
             outcome = $"status {status:X2} tid {rx[2]:X2} cmd {rx[7]:X2}/{rx[8]:X2}";
             // Чужой ответ: с тем же устройством параллельно общается Razer Synapse (у него, например, команды подсветки 0F/03),
             // или это ещё наш прошлый ответ — устройство не успело обработать новую команду. Ждём дальше.
-            if (status == StatusOk) continue;
+            // Несколько чужих подряд — значит, Synapse затёр наш запрос: отправляем его ещё раз.
+            if (status == StatusOk)
+            {
+                if (++foreign >= 3 && !resent)
+                {
+                    resent = true;
+                    foreign = 0;
+                    Native.HidD_SetFeature(handle, tx, tx.Length);
+                }
+                continue;
+            }
             // ошибка, нет связи с устройством или не тот transaction id
             return null;
         }

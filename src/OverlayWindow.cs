@@ -38,6 +38,7 @@ internal sealed class OverlayWindow : Form
         Text = "BatteryBar";
         _frames.Tick += OnFrame;
         _chargeTimer.Tick += OnChargeTick;
+        _hoverTimer.Tick += OnHoverTick;
     }
 
     protected override void Dispose(bool disposing)
@@ -46,6 +47,8 @@ internal sealed class OverlayWindow : Form
         {
             _frames.Dispose();
             _chargeTimer.Dispose();
+            _hoverTimer.Dispose();
+            _tip.Dispose();
             _scene?.Dispose();
         }
         base.Dispose(disposing);
@@ -581,9 +584,67 @@ internal sealed class OverlayWindow : Form
         EnsureFrames();
     }
 
+    // Подсказка при наведении: с батарейкой без числа не видно ни процента, ни названия.
+    private readonly TaskbarTooltip _tip = new();
+    private readonly System.Windows.Forms.Timer _hoverTimer = new() { Interval = 400 };
+    private Slot? _hover;
+
+    private void Hover(Slot? slot)
+    {
+        if (slot == _hover) return;
+        _tip.Hide();
+        _hoverTimer.Stop();
+        _hover = slot;
+        if (slot != null) _hoverTimer.Start();
+    }
+
+    private void OnHoverTick(object? sender, EventArgs e)
+    {
+        _hoverTimer.Stop();
+        if (_hover?.Item is not { } it || _scene is not { } sc || _hover.Pos is not { } at) return;
+        string text = DeviceTrayIcons.Tooltip(it.Dev);
+        var layout = sc.Layout;
+        var screen = Screen.FromRectangle(layout.Taskbar).Bounds;
+        int gap = (int)(8 * layout.Dpi / 96f);
+        // Середина устройства на экране (окно блока начинается с SlotStart).
+        float middle = layout.SlotStart + at + _hover.Length / 2;
+        Point anchor;
+        AnchorStyles side;
+        if (layout.Vertical)
+        {
+            // Панель сбоку — подсказка с внутренней стороны, напротив устройства.
+            bool left = layout.Taskbar.Left - screen.Left < screen.Right - layout.Taskbar.Right;
+            anchor = new Point(left ? layout.Taskbar.Right + gap : layout.Taskbar.Left - gap, (int)middle);
+            side = left ? AnchorStyles.Right : AnchorStyles.Left;
+        }
+        else
+        {
+            // Панель снизу — подсказка над ней, сверху — под ней.
+            bool bottom = layout.Taskbar.Top - screen.Top > screen.Bottom - layout.Taskbar.Bottom;
+            anchor = new Point((int)middle, bottom ? layout.Taskbar.Top - gap : layout.Taskbar.Bottom + gap);
+            side = bottom ? AnchorStyles.Top : AnchorStyles.Bottom;
+        }
+        _tip.ShowAt(text, anchor, side, layout.LightTheme, layout.Dpi);
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+        Hover(null);
+    }
+
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
+        if (_drag == null)
+        {
+            // Подсказка нужна там, где числа нет, — у вида «Батарейка».
+            float a = Along(e);
+            Hover(_scene?.Charge != ChargeDisplay.Battery ? null
+                : _slots.FirstOrDefault(sl => sl.Item != null && !sl.Leaving && sl.Pos is { } p && a >= p && a <= p + sl.Length));
+            return;
+        }
+        Hover(null);
         if (_drag is not { } d || _scene is not { } sc) return;
         float at = Along(e);
         if (!d.Started)
@@ -869,6 +930,8 @@ internal sealed class OverlayWindow : Form
         DeviceKind.Headset => GlyphHeadset,
         _ => GlyphOther,
     };
+
+    internal static string PickFontName(params string[] names) => PickFont(names);
 
     private static string PickFont(params string[] names)
     {

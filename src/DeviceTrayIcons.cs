@@ -96,7 +96,8 @@ internal sealed class DeviceTrayIcons : NativeWindow, IDisposable
         return 1000 + hash % 1_000_000;
     }
 
-    private static string Tooltip(DeviceBattery d)
+    /// <summary>«Название: 86%, заряжается» — для значков в трее и подсказки у блока на панели задач.</summary>
+    internal static string Tooltip(DeviceBattery d)
     {
         string percent = d.Percent is { } p ? $"{p}%" : "?";
         string state = d.State switch

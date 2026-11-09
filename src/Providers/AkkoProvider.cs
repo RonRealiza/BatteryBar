@@ -52,9 +52,10 @@ internal sealed class AkkoProvider : IBatteryProvider
                         _lastRaw = raw;
                     }
 
-                    // [1] — есть ответ, [2] — заряд (смещение на номер отчёта). Сразу после включения ресивер
-                    // отвечает нулём, пока клавиатура не прислала заряд, — такой ответ не показываем.
-                    if (r == null || r[1] != 1 || r[2] is < 1 or > 100) continue;
+                    // Со смещением на номер отчёта: [2] — заряд, [7] — клавиатура на связи (1 или 3, как в Open-Akko).
+                    // Признак «есть ответ» в [1] ресивер 38EE не выставляет (у Akko 5075 V5 TMR там 0), поэтому не смотрим на него.
+                    // Сразу после включения ресивер отвечает нулевым зарядом, пока клавиатура его не прислала, — такой не показываем.
+                    if (r == null || r[7] is not (1 or 3) || r[2] is < 1 or > 100) continue;
                     bool charging = r[4] == 1;
                     result.Add(new DeviceBattery($"akko:{dev.VendorID:X4}:{dev.ProductID:X4}", NameOf(dev), DeviceKind.Keyboard,
                         r[2], charging ? ChargeState.Charging : ChargeState.Discharging));
@@ -98,7 +99,7 @@ internal sealed class AkkoProvider : IBatteryProvider
         {
             Thread.Sleep(20);
             stream.GetFeature(rx);
-            if (rx[1] == 1) break;
+            if (rx[7] is 1 or 3) break;
         }
         return rx;
     }
