@@ -60,6 +60,7 @@ Instead of the taskbar block (or together with it), every device can get its own
 | Razer wireless mice, including through the Mouse Dock Pro | ✅ tested with Cobra Pro on a Mouse Dock Pro |
 | Razer keyboards and headsets | 🧪 should work |
 | AULA keyboards with a 2.4G receiver (F75, F87, AU75 and others) | ✅ tested with AU75 |
+| Akko and MonsGeek keyboards with a 2.4G receiver (including magnetic ones such as Akko 5075 V5 TMR) | 🧪 should work |
 | SteelSeries Arctis Nova 7 / 7P / 7X, Nova 5, Nova Pro Wireless, Arctis 7 / 7+ / 1 / 9 / Pro | 🧪 should work |
 | HyperX Cloud III S Wireless, Cloud Alpha Wireless, Cloud II Wireless, Cloud Flight | 🧪 should work |
 | Corsair Void and related headsets | 🧪 should work |

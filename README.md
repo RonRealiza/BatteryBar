@@ -60,6 +60,7 @@
 | Беспроводные мыши Razer, в том числе через Mouse Dock Pro | ✅ проверено на Cobra Pro с Mouse Dock Pro |
 | Клавиатуры и гарнитуры Razer | 🧪 должно работать |
 | Клавиатуры AULA с ресивером 2.4G (F75, F87, AU75 и другие) | ✅ проверено на AU75 |
+| Клавиатуры Akko и MonsGeek с ресивером 2.4G (в том числе магнитные, например Akko 5075 V5 TMR) | 🧪 должно работать |
 | SteelSeries Arctis Nova 7 / 7P / 7X, Nova 5, Nova Pro Wireless, Arctis 7 / 7+ / 1 / 9 / Pro | 🧪 должно работать |
 | HyperX Cloud III S Wireless, Cloud Alpha Wireless, Cloud II Wireless, Cloud Flight | 🧪 должно работать |
 | Гарнитуры Corsair Void и родственные | 🧪 должно работать |

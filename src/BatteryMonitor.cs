@@ -49,9 +49,12 @@ internal sealed class BatteryMonitor : IDisposable
     }
 
     // Мыши Logitech и Razer и клавиатуры AULA засыпают, и ресивер их не видит — держим последнее значение, пока не ответят.
+    // Logitech по проводу (слот 0xFF) не засыпает: пропал — значит, кабель вынули, запись убираем сразу.
     private static bool IsSticky(string id) =>
-        id.StartsWith("logi:", StringComparison.Ordinal) || id.StartsWith("razer:", StringComparison.Ordinal)
-        || id.StartsWith("aula:", StringComparison.Ordinal);
+        (id.StartsWith("logi:", StringComparison.Ordinal) && !id.EndsWith("|255", StringComparison.Ordinal))
+        || id.StartsWith("razer:", StringComparison.Ordinal)
+        || id.StartsWith("aula:", StringComparison.Ordinal)
+        || id.StartsWith("akko:", StringComparison.Ordinal);
 
     private void Run()
     {

@@ -107,8 +107,12 @@ internal sealed class LogitechProvider : IBatteryProvider
 
                 if (!_info.TryGetValue(id, out var info))
                 {
-                    info = (hidpp.ReadName(idx) ?? "Logitech", hidpp.ReadKind(idx));
-                    _info[id] = info;
+                    // Только что проснувшаяся мышь может не ответить на запрос имени — тогда «Logitech» на этот раз,
+                    // а спросим снова при следующем опросе. Иначе запомненное «Logitech» мешало узнать ту же мышь,
+                    // подключённую по проводу.
+                    string? name = hidpp.ReadName(idx);
+                    info = (name ?? "Logitech", hidpp.ReadKind(idx));
+                    if (name != null) _info[id] = info;
                 }
 
                 result.Add(new DeviceBattery(id, info.Name, info.Kind, cached.Value.Percent, cached.Value.State));
