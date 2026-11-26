@@ -65,6 +65,7 @@ powershell -ExecutionPolicy Bypass -File tools\release.ps1
 | `ZornherProvider` | ZH870: команда 0x20 через MI_03; зарядка распознаётся по устойчивому скачку процента |
 | `DualSenseProvider`, `DualShock4Provider` | байт статуса во входном отчёте (по драйверу Linux hid-playstation) |
 | `XboxProvider` | Windows.Gaming.Input |
+| `LamzuProvider` | LAMZU Maya X: feature-отчёт 65 байт, команда 0x83 на коллекции FFFF:0000 (как LAMZU Aurora) |
 | `AirPodsProvider` | Bluetooth-реклама Apple (Proximity Pairing, по OpenPods), только пока AirPods подключены |
 | `BluetoothProvider` | свойство Windows `DEVPKEY_Bluetooth_Battery`; общий модуль, уступает специализированным |
 

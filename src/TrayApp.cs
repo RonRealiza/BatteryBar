@@ -101,6 +101,7 @@ internal sealed class TrayApp : ApplicationContext, ISettingsHost
             new ZornherProvider(),
             new AulaProvider(),
             new AkkoProvider(),
+            new LamzuProvider(),
             new DualSenseProvider(),
             new DualShock4Provider(),
             new XboxProvider(),

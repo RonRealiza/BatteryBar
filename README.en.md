@@ -58,6 +58,7 @@ Instead of the taskbar block (or together with it), every device can get its own
 | Zornher ZH870 keyboard | ✅ tested |
 | DualShock 4 | 🧪 should work |
 | Razer wireless mice, including through the Mouse Dock Pro | ✅ tested with Cobra Pro on a Mouse Dock Pro |
+| LAMZU Maya X mouse (8K receiver, 1K receiver and cable) | ✅ tested with Maya X on the 8K receiver |
 | Razer keyboards and headsets | 🧪 should work |
 | AULA keyboards with a 2.4G receiver (F75, F87, AU75 and others) | ✅ tested with AU75 |
 | Akko and MonsGeek keyboards with a 2.4G receiver (including magnetic ones such as Akko 5075 V5 TMR) | 🧪 should work |
